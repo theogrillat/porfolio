@@ -1,10 +1,10 @@
 # My Portfolio
 
-A modern, cross-platform portfolio application built with Flutter, showcasing my projects, skills, and professional experience.
+A modern web portfolio application built with Flutter, showcasing my projects, skills, and professional experience.
 
 ## Features
 
-- **Cross-platform**: Runs on iOS, Android, Web, macOS, Windows, and Linux
+- **Web-optimized**: Responsive design built for modern web browsers
 - **Modern UI**: Clean, responsive design with smooth animations
 - **Project Showcase**: Display my work with detailed project information
 - **Interactive Elements**: Engaging user interactions and hover effects
@@ -20,8 +20,7 @@ A modern, cross-platform portfolio application built with Flutter, showcasing my
 
 - Flutter SDK (3.0 or higher)
 - Dart SDK (3.0 or higher)
-- Android Studio / VS Code with Flutter extensions
-- Xcode (for iOS development)
+- VS Code with Flutter extensions
 - Chrome (for web development)
 - Firebase project setup
 
@@ -48,14 +47,11 @@ A modern, cross-platform portfolio application built with Flutter, showcasing my
    
    # This will create:
    # - lib/firebase_options.dart
-   # - android/app/google-services.json
-   # - ios/Runner/GoogleService-Info.plist
-   # - macos/Runner/GoogleService-Info.plist
    ```
 
-4. Run the application:
+4. Run the web application:
    ```bash
-   flutter run
+   flutter run -d chrome
    ```
 
 ### Firebase Setup
@@ -68,29 +64,126 @@ This project uses Firebase for backend services. To set up your own Firebase pro
 4. Run `flutterfire configure` to generate the configuration file
 5. The generated `firebase_options.dart` file will be automatically added to `.gitignore`
 
+### Database Setup (Firestore)
+
+This portfolio uses Firestore to store project data and about information. You'll need to create the following collections and documents:
+
+#### 1. Create Collections
+
+In your Firebase Console, go to **Firestore Database** and create these collections:
+
+- `static` - Contains static content like about information
+- `projects` - Contains individual project documents
+
+#### 2. Static Collection - About Document
+
+Create a document with ID `about` in the `static` collection:
+
+```json
+{
+  "avatar": "https://your-avatar-url.com/image.jpg",
+  "bio": "Your professional bio and introduction text",
+  "mainSkills": [
+    "Flutter",
+    "Dart", 
+    "Firebase",
+    "UI/UX Design"
+  ],
+  "skillCategories": [
+    {
+      "name": "Frontend Development",
+      "skills": ["Flutter", "Dart", "React", "JavaScript", "TypeScript"]
+    },
+    {
+      "name": "Backend Development", 
+      "skills": ["Firebase", "Node.js", "Python", "PostgreSQL"]
+    },
+    {
+      "name": "Design",
+      "skills": ["UI/UX Design", "Figma", "Adobe Creative Suite", "Prototyping"]
+    }
+  ]
+}
+```
+
+#### 3. Projects Collection
+
+Create individual documents for each project. Use any document ID (e.g., `project-1`, `my-flutter-app`, etc.):
+
+```json
+{
+  "title": "Project Name",
+  "description": "Detailed description of your project, what it does, and why you built it.",
+  "techStack": [
+    "Flutter",
+    "Firebase", 
+    "Dart",
+    "Material Design"
+  ],
+  "screenshots": [
+    "https://your-domain.com/screenshot1.jpg",
+    "https://your-domain.com/screenshot2.jpg",
+    "https://your-domain.com/screenshot3.jpg"
+  ],
+  "background": "#FF6B6B",
+  "foreground": "#FFFFFF"
+}
+```
+
+**Color Format**: Use hex color codes (e.g., `#FF6B6B` for background, `#FFFFFF` for foreground text)
+
+#### 4. Security Rules
+
+Set up Firestore security rules in the Firebase Console:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read access to all documents
+    match /{document=**} {
+      allow read: if true;
+    }
+    
+    // Only allow authenticated users to write
+    match /{document=**} {
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+#### 5. Sample Data
+
+Here's a complete example of what your Firestore should look like:
+
+**Collection: `static`**
+- Document: `about` (with the JSON structure above)
+
+**Collection: `projects`**  
+- Document: `portfolio-app` (with project JSON structure above)
+- Document: `ecommerce-mobile` (another project)
+- Document: `weather-app` (another project)
+
+#### 6. Testing Your Setup
+
+After setting up the database, run the app to verify everything works:
+
+```bash
+flutter run -d chrome
+```
+
+The app should successfully load your about information and display your projects.
+
 ### Building for Production
 
-#### Web
+Build the web application for production:
+
 ```bash
 flutter build web --release
 ```
 
-#### Android
-```bash
-flutter build apk --release
-```
-
-#### iOS
-```bash
-flutter build ios --release
-```
-
-#### Desktop
-```bash
-flutter build macos --release
-flutter build windows --release
-flutter build linux --release
-```
+The built files will be in the `build/web` directory, ready for deployment to any web hosting service.
 
 ## Project Structure
 
@@ -123,21 +216,22 @@ lib/
 
 ## Technologies Used
 
-- **Flutter**: Cross-platform UI framework
+- **Flutter Web**: Modern web UI framework
 - **Dart**: Programming language
-- **Firebase**: Backend services (if applicable)
+- **Firebase**: Backend services and database
 - **Custom Animations**: Rive animations and custom Flutter animations
 
 ## About This Project
 
-This portfolio showcases my development skills and projects. It's built with Flutter to demonstrate my ability to create cross-platform applications with modern UI/UX design principles.
+This portfolio showcases my development skills and projects. It's built with Flutter Web to demonstrate my ability to create modern web applications with excellent UI/UX design principles.
 
 The application includes:
 - Interactive project showcases
 - Smooth animations and transitions
-- Responsive design for all devices
+- Responsive design for all screen sizes
 - Custom widgets and components
 - Clean, maintainable code architecture
+- Optimized web performance
 
 ## License
 
@@ -146,12 +240,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact
 
 - **GitHub**: [theogrillat](https://github.com/theogrillat)
-- **Email**: [Add your email here]
-- **LinkedIn**: [Add your LinkedIn profile here]
-- **Portfolio**: [Add your live portfolio URL here]
 
 ## Acknowledgments
 
 - Flutter team for the amazing framework
-- Contributors and open source community
-- Design inspiration from modern portfolio websites

@@ -52,3 +52,6 @@ macos/Runner/GoogleService-Info.plist
 ios/flavors/*/GoogleService-Info.plist
 android/app/src/*/google-services.json
 macos/flavors/*/GoogleService-Info.plist
+
+# Firebase configuration
+firebase.json
