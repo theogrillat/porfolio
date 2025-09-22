@@ -47,6 +47,7 @@ A modern web portfolio application built with Flutter, showcasing my projects, s
    
    # This will create:
    # - lib/firebase_options.dart
+   # - firebase.json (automatically ignored by git)
    ```
 
 4. Run the web application:

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:portfolio/models/project.dart';
 import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/shared/styles.dart';
@@ -8,7 +7,6 @@ import 'package:portfolio/views/project/project_viewmodel.dart';
 import 'package:portfolio/widgets/animated_skew.dart';
 import 'package:portfolio/widgets/boxbutton.dart';
 import 'package:portfolio/widgets/cloud/cloud_view.dart';
-import 'package:portfolio/widgets/forge.dart';
 import 'package:portfolio/widgets/md_viewer.dart';
 import 'package:portfolio/widgets/pressure_text.dart';
 import 'package:stacked/stacked.dart';
@@ -46,6 +44,7 @@ class ProjectView extends StatelessWidget {
               background: project.background,
               foreground: project.foreground,
               child: (box) => CloudView(
+                key: ValueKey('cloud_${project.title}_${project.techStack.join('_')}'),
                 tags: project.techStack,
                 height: boxSize * box.position.height,
                 width: boxSize * box.position.width,
@@ -67,23 +66,6 @@ class ProjectView extends StatelessWidget {
                   horizontalPadding: 0,
                 ),
               ),
-              // child: (box) => ClipRect(
-              //   child: Stack(
-              //     children: [
-              //       ForgeWidget(
-              //         tags: project.techStack,
-              //         color: project.foreground,
-              //         controller: model.forgeController,
-              //       ),
-              //       GestureDetector(
-              //         onTap: () => model.explode(),
-              //         child: Container(
-              //           color: Colors.transparent,
-              //         ),
-              //       ),
-              //     ],
-              //   ),
-              // ),
             ),
             GridBox(
               show: homeModel.currentGridIndex >= 2,
@@ -234,70 +216,114 @@ class ProjectView extends StatelessWidget {
             GridBox(
               background: project.background,
               foreground: project.foreground,
+              key: ValueKey('screenshot_0_${project.screenshots[0].url}'),
               show: homeModel.currentGridIndex >= 7,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              position: BoxPosition(
-                start: Coords(0, 0),
-                end: Coords(0, 1),
-              ),
-              child: (box) => Image.network(
-                model.project.screenshots[0],
-                fit: BoxFit.cover,
+              position: project.screenshots[0].position,
+              child: (box) => ProjectScreenshot(
+                url: project.screenshots[0].url,
+                box: box,
+                onTap: model.openScreenshot,
               ),
             ),
             GridBox(
               background: project.background,
               foreground: project.foreground,
+              key: ValueKey('screenshot_1_${project.screenshots[1].url}'),
               show: homeModel.currentGridIndex >= 8,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              position: BoxPosition(
-                start: Coords(1, 0),
-                end: Coords(1, 1),
-              ),
-              child: (box) => Image.network(
-                model.project.screenshots[1],
-                fit: BoxFit.cover,
-              ),
+              position: project.screenshots[1].position,
+              child: (box) => ProjectScreenshot(url: project.screenshots[1].url, box: box, onTap: model.openScreenshot),
             ),
             GridBox(
               background: project.background,
               foreground: project.foreground,
+              key: ValueKey('screenshot_2_${project.screenshots[2].url}'),
               show: homeModel.currentGridIndex >= 9,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              position: BoxPosition(
-                start: Coords(0, 2),
-                end: Coords(0, 3),
-              ),
-              child: (box) => Image.network(
-                model.project.screenshots[2],
-                fit: BoxFit.cover,
-              ),
+              position: project.screenshots[2].position,
+              child: (box) => ProjectScreenshot(url: project.screenshots[2].url, box: box, onTap: model.openScreenshot),
             ),
             GridBox(
               background: project.background,
               foreground: project.foreground,
+              key: ValueKey('screenshot_3_${project.screenshots[3].url}'),
               show: homeModel.currentGridIndex >= 10,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              position: BoxPosition(
-                start: Coords(1, 2),
-                end: Coords(1, 3),
-              ),
-              child: (box) => Image.network(
-                model.project.screenshots[3],
-                fit: BoxFit.cover,
-              ),
+              position: project.screenshots[3].position,
+              child: (box) => ProjectScreenshot(url: project.screenshots[3].url, box: box, onTap: model.openScreenshot),
             ),
           ],
         );
       },
+    );
+  }
+}
+
+class ProjectScreenshot extends StatelessWidget {
+  const ProjectScreenshot({
+    super.key,
+    required this.url,
+    required this.box,
+    required this.onTap,
+  });
+
+  final String url;
+  final Box box;
+  final Function(BuildContext context, String url, Box box) onTap;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onTap(context, url, box),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: ProjectScreenshopImage(url: url, box: box),
+      ),
+    );
+  }
+}
+
+class ProjectScreenshopImage extends StatelessWidget {
+  const ProjectScreenshopImage({
+    super.key,
+    required this.url,
+    required this.box,
+  });
+
+  final String url;
+  final Box box;
+
+  @override
+  Widget build(BuildContext context) {
+    return Hero(
+      tag: url,
+      child: Image.network(
+        key: ValueKey('img_0_${url}'),
+        url,
+        fit: BoxFit.cover,
+        cacheWidth: (box.boxSize * box.position.width).toInt(),
+        cacheHeight: (box.boxSize * box.position.height).toInt(),
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: box.background,
+            child: Center(
+              child: Icon(
+                Icons.broken_image,
+                color: box.foreground,
+                size: 50,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

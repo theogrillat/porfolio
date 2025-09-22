@@ -470,6 +470,22 @@ class CloudViewModel extends BaseViewModel {
     });
   }
 
+  void updateTags(List<String> newTags) {
+    if (_tags != newTags) {
+      _tags = newTags;
+      // Reset rotation matrix for new tags
+      _rotationMatrix = vm.Matrix3.identity();
+
+      // Defer update to ensure we're not in a build phase
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_mounted) {
+          // Distribute new tags on sphere
+          _distributeTagsOnSphere();
+        }
+      });
+    }
+  }
+
   void _startAnimationTimer() {
     // Use a slower timer for WASM compatibility (30fps instead of 60fps)
     _animationTimer = Timer.periodic(const Duration(milliseconds: 33), (timer) {

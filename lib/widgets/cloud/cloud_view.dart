@@ -5,7 +5,7 @@ import 'package:portfolio/shared/styles.dart';
 import 'package:stacked/stacked.dart';
 import 'cloud_viewmodel.dart';
 
-class CloudView extends StatelessWidget {
+class CloudView extends StatefulWidget {
   const CloudView({
     super.key,
     required this.tags,
@@ -31,27 +31,41 @@ class CloudView extends StatelessWidget {
   final double leftViewportOffset;
   final double? tagSize;
   final bool blur;
+
+  @override
+  State<CloudView> createState() => _CloudViewState();
+}
+
+class _CloudViewState extends State<CloudView> {
+  @override
+  void didUpdateWidget(CloudView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Check if tags have changed and update the viewmodel
+    if (widget.tags != oldWidget.tags) {
+      // We need to access the viewmodel to update tags
+      // This will be handled by the key change forcing a rebuild
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ViewModelBuilder<CloudViewModel>.reactive(
       viewModelBuilder: () => CloudViewModel(),
       onViewModelReady: (model) => model.onInit(
-        tags: tags,
-        height: height,
-        width: width,
-        mousePositionStream: mousePositionStream,
-        topViewportOffset: topViewportOffset,
-        leftViewportOffset: leftViewportOffset,
-        foregroundColor: foregroundColor,
-        tagSize: tagSize ?? 16,
+        tags: widget.tags,
+        height: widget.height,
+        width: widget.width,
+        mousePositionStream: widget.mousePositionStream,
+        topViewportOffset: widget.topViewportOffset,
+        leftViewportOffset: widget.leftViewportOffset,
+        foregroundColor: widget.foregroundColor,
+        tagSize: widget.tagSize ?? 16,
       ),
       onDispose: (model) => model.onDispose(),
-      fireOnViewModelReadyOnce: true,
-      disposeViewModel: true,
       builder: (context, model, child) {
         return SizedBox(
-          width: width,
-          height: height,
+          width: widget.width,
+          height: widget.height,
           child: AnimatedOpacity(
             opacity: model.showCloud ? 1 : 0,
             duration: const Duration(milliseconds: 800),
@@ -88,8 +102,8 @@ class CloudView extends StatelessWidget {
                 final double textHeight = tag.textHeight;
 
                 // Fixed base text style
-                final textStyle = Typos().large(color: foregroundColor).copyWith(
-                      fontSize: tagSize ?? 16.0, // Fixed size - we use scale for variations
+                final textStyle = Typos().large(color: widget.foregroundColor).copyWith(
+                      fontSize: widget.tagSize ?? 16.0, // Fixed size - we use scale for variations
                       height: 1,
                       fontWeight: FontWeight.w700,
                     );
@@ -102,8 +116,8 @@ class CloudView extends StatelessWidget {
                   return const SizedBox.shrink(); // Skip invalid positioned widgets
                 }
 
-                final double left = (posX - textWidth / 2).clamp(-textWidth, width + textWidth);
-                final double top = (posY - textHeight / 2).clamp(-textHeight, height + textHeight);
+                final double left = (posX - textWidth / 2).clamp(-textWidth, widget.width + textWidth);
+                final double top = (posY - textHeight / 2).clamp(-textHeight, widget.height + textHeight);
 
                 // Additional safety checks for WASM compatibility
                 if (textWidth <= 0 || textHeight <= 0 || !textWidth.isFinite || !textHeight.isFinite) {
@@ -125,7 +139,7 @@ class CloudView extends StatelessWidget {
                         alignment: Alignment.center,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         child: ClipRect(
-                          child: blur && blurRadius > 0
+                          child: widget.blur && blurRadius > 0
                               ? ImageFiltered(
                                   imageFilter: ImageFilter.blur(sigmaX: blurRadius, sigmaY: blurRadius),
                                   child: Text(
