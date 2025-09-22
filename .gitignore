@@ -44,5 +44,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase configuration (contains sensitive data)
+# FlutterFire
 lib/firebase_options.dart
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+macos/Runner/GoogleService-Info.plist
+ios/flavors/*/GoogleService-Info.plist
+android/app/src/*/google-services.json
+macos/flavors/*/GoogleService-Info.plist
