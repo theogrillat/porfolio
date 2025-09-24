@@ -74,12 +74,23 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
   List<Rect>? _cachedCharBounds;
   Rect? _cachedContainerBounds;
   int _boundsUpdateCounter = 0;
-  static const int BOUNDS_UPDATE_INTERVAL = 2; // Update bounds every 2 frames (~60fps for smooth positioning)
+  static const int BOUNDS_UPDATE_INTERVAL = 3; // Update bounds every 3 frames (20fps for positioning)
 
   // Character style cache to prevent recalculation
   List<Map<String, dynamic>>? _cachedStyles;
   int _styleUpdateCounter = 0;
-  static const int STYLE_UPDATE_INTERVAL = 1; // Update styles every frame (120fps for smooth effects)
+  static const int STYLE_UPDATE_INTERVAL = 2; // Update styles every 2 frames (30fps for effects)
+
+  // Mouse movement optimization
+  double _lastMouseX = 0.0;
+  static const double MOUSE_MOVEMENT_THRESHOLD = 3.0; // Only update if mouse moves > 3 pixels
+
+  // Font variation cache to avoid object creation
+  final Map<String, List<FontVariation>> _fontVariationCache = {};
+
+  // Cached RenderBox references
+  RenderBox? _cachedContainerRenderBox;
+  List<RenderBox?> _cachedCharRenderBoxes = [];
 
   // Error tracking for stability
   int _errorCount = 0;
@@ -95,8 +106,19 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
   // WASM/Web compatibility check
   bool get _isWeb => kIsWeb;
 
-  // WASM-safe font variation helper
+  // WASM-safe font variation helper with caching
   List<FontVariation> _createSafeFontVariations(double wght, double wdth, double ital) {
+    // Create cache key with rounded values to improve cache hit rate
+    final keyWght = (wght / 25).round() * 25; // Round to nearest 25
+    final keyWdth = (wdth / 10).round() * 10; // Round to nearest 10
+    final keyItal = (ital * 10).round() / 10; // Round to 1 decimal place
+    final cacheKey = '${keyWght}_${keyWdth}_${keyItal}';
+
+    // Return cached result if available
+    if (_fontVariationCache.containsKey(cacheKey)) {
+      return _fontVariationCache[cacheKey]!;
+    }
+
     List<FontVariation> variations = [];
 
     if (_isWeb) {
@@ -123,6 +145,11 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
       if (widget.italic && ital.isFinite) variations.add(FontVariation('ital', ital));
     }
 
+    // Cache the result (limit cache size to prevent memory leaks)
+    if (_fontVariationCache.length < 200) {
+      _fontVariationCache[cacheKey] = variations;
+    }
+
     return variations;
   }
 
@@ -134,9 +161,9 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
       _chars = widget.text.split('');
       _charKeys = List.generate(_chars.length, (index) => GlobalKey());
 
-      // 120fps = ~8.33ms intervals
+      // 60fps = ~16.66ms intervals - much more reasonable
       _animationController = AnimationController(
-        duration: Duration(milliseconds: 8), // 120fps
+        duration: Duration(milliseconds: 16), // 60fps
         vsync: this,
       )..repeat();
 
@@ -150,21 +177,29 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
                 'fontVariations': <FontVariation>[],
                 'opacity': 1.0,
               });
+      _cachedCharRenderBoxes = List.filled(_chars.length, null);
 
       _loadFontFromUrl();
 
-      // Listen to mouse position stream
+      // Listen to mouse position stream with movement threshold
       _mouseStreamSubscription = widget.mousePositionStream.listen((Offset? position) {
         if (mounted) {
-          setState(() {
-            if (position != null) {
-              // Only use dx value, ignore dy
-              _targetMousePosition = Offset(position.dx, 0);
-            } else {
-              // Reset to center when cursor is outside viewport
-              _targetMousePosition = Offset.zero;
+          if (position != null) {
+            // Only update if mouse moved significantly
+            final dx = position.dx;
+            if ((dx - _lastMouseX).abs() > MOUSE_MOVEMENT_THRESHOLD) {
+              setState(() {
+                _targetMousePosition = Offset(dx, 0);
+                _lastMouseX = dx;
+              });
             }
-          });
+          } else {
+            // Reset to center when cursor is outside viewport
+            setState(() {
+              _targetMousePosition = Offset.zero;
+              _lastMouseX = 0.0;
+            });
+          }
         }
       });
 
@@ -191,6 +226,7 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
       if (widget.text != oldWidget.text) {
         _chars = widget.text.split('');
         _charKeys = List.generate(_chars.length, (index) => GlobalKey());
+        _cachedCharRenderBoxes = List.filled(_chars.length, null);
         _invalidateCaches();
       }
 
@@ -254,6 +290,17 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
     }
     _cachedStyles = null;
 
+    // Clear font variation cache
+    _fontVariationCache.clear();
+
+    // Clear cached render boxes
+    try {
+      _cachedCharRenderBoxes.clear();
+    } catch (e) {
+      // Ignore clear errors for immutable lists
+    }
+    _cachedContainerRenderBox = null;
+
     // Clear character arrays (safely handle immutable lists)
     try {
       _chars.clear();
@@ -289,6 +336,9 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
   void _invalidateCaches() {
     _cachedCharBounds = null;
     _cachedContainerBounds = null;
+    _cachedContainerRenderBox = null;
+    _cachedCharRenderBoxes = List.filled(_chars.length, null);
+    _fontVariationCache.clear();
     _cachedStyles = List.generate(
         _chars.length,
         (index) => {
@@ -472,13 +522,12 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
         _framesSinceLastCheck = 0;
       }
 
-      // Always update mouse position smoothly at 120fps
-      setState(() {
-        _mousePosition = Offset(
-          _mousePosition.dx + (_targetMousePosition.dx - _mousePosition.dx) / 15,
-          0, // Always keep y at 0 since we only care about x position
-        );
-      });
+      // Calculate new mouse position
+      final newMouseX = _mousePosition.dx + (_targetMousePosition.dx - _mousePosition.dx) / 15;
+      final mouseHasMoved = (newMouseX - _mousePosition.dx).abs() > 0.5; // Only update if movement is significant
+
+      // Update mouse position
+      _mousePosition = Offset(newMouseX, 0);
 
       // Throttle expensive calculations when under pressure
       final boundsInterval = _isThrottled ? BOUNDS_UPDATE_INTERVAL * 3 : BOUNDS_UPDATE_INTERVAL;
@@ -487,14 +536,23 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
       _boundsUpdateCounter++;
       _styleUpdateCounter++;
 
+      bool needsRebuild = false;
+
       if (_boundsUpdateCounter >= boundsInterval) {
         _boundsUpdateCounter = 0;
         _updateCharacterBounds();
+        needsRebuild = true;
       }
 
-      if (_styleUpdateCounter >= styleInterval && !_isThrottled) {
+      if (_styleUpdateCounter >= styleInterval && !_isThrottled && mouseHasMoved) {
         _styleUpdateCounter = 0;
         _updateCharacterStyles();
+        needsRebuild = true;
+      }
+
+      // Only call setState if something actually changed
+      if (needsRebuild || mouseHasMoved) {
+        setState(() {});
       }
     } catch (e) {
       _handleError('animateMouseFollow', e);
@@ -505,15 +563,17 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
     if (!mounted || _isDisposing) return;
 
     try {
-      // Double-check mounted state and context validity
-      final context = _containerKey.currentContext;
-      if (!mounted || context == null) return;
+      // Cache container RenderBox if not already cached
+      if (_cachedContainerRenderBox == null) {
+        final context = _containerKey.currentContext;
+        if (!mounted || context == null) return;
+        _cachedContainerRenderBox = context.findRenderObject() as RenderBox?;
+      }
 
-      final containerRenderBox = context.findRenderObject() as RenderBox?;
-      if (containerRenderBox == null || !containerRenderBox.hasSize) return;
+      if (_cachedContainerRenderBox == null || !_cachedContainerRenderBox!.hasSize) return;
 
       // Update container bounds
-      _cachedContainerBounds = Rect.fromLTWH(0, 0, containerRenderBox.size.width, containerRenderBox.size.height);
+      _cachedContainerBounds = Rect.fromLTWH(0, 0, _cachedContainerRenderBox!.size.width, _cachedContainerRenderBox!.size.height);
 
       // Initialize bounds list if needed
       _cachedCharBounds ??= List.filled(_charKeys.length, Rect.zero);
@@ -522,10 +582,19 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
       for (int i = 0; i < _charKeys.length; i++) {
         if (!mounted) break; // Check mounted state in loop
 
-        final charContext = _charKeys[i].currentContext;
-        if (charContext == null) continue;
+        // Use cached RenderBox if available
+        RenderBox? charRenderBox = _cachedCharRenderBoxes[i];
 
-        final charRenderBox = charContext.findRenderObject() as RenderBox?;
+        if (charRenderBox == null) {
+          final charContext = _charKeys[i].currentContext;
+          if (charContext == null) continue;
+          charRenderBox = charContext.findRenderObject() as RenderBox?;
+          // Cache the RenderBox for future use
+          if (charRenderBox != null && i < _cachedCharRenderBoxes.length) {
+            _cachedCharRenderBoxes[i] = charRenderBox;
+          }
+        }
+
         if (charRenderBox != null && charRenderBox.hasSize) {
           final charPosition = charRenderBox.localToGlobal(Offset.zero);
           final charSize = charRenderBox.size;
@@ -541,6 +610,10 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
           }
         } else if (i < _cachedCharBounds!.length) {
           _cachedCharBounds![i] = Rect.zero;
+          // Clear cached RenderBox if it's no longer valid
+          if (i < _cachedCharRenderBoxes.length) {
+            _cachedCharRenderBoxes[i] = null;
+          }
         }
       }
     } catch (e) {
@@ -552,23 +625,18 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
     if (!mounted || _isDisposing) return;
 
     try {
-      // Double-check mounted state and context validity
-      final context = _containerKey.currentContext;
-      if (!mounted || context == null) return;
+      // Use cached container RenderBox
+      if (_cachedContainerRenderBox == null || !_cachedContainerRenderBox!.hasSize) return;
 
-      // Get fresh container position for accurate mouse tracking
-      final containerRenderBox = context.findRenderObject() as RenderBox?;
-      if (containerRenderBox == null || !containerRenderBox.hasSize) return;
-
-      final containerPosition = containerRenderBox.localToGlobal(Offset.zero);
+      final containerPosition = _cachedContainerRenderBox!.localToGlobal(Offset.zero);
       // Mouse position from stream is already in global coordinates
       final localMousePosition = Offset(
         _mousePosition.dx,
-        containerPosition.dy + containerRenderBox.size.height / 2, // Use container's center y position
+        containerPosition.dy + _cachedContainerRenderBox!.size.height / 2, // Use container's center y position
       );
 
       // Use cached bounds if available, otherwise get fresh bounds
-      final maxDistance = _cachedContainerBounds != null ? math.max(_cachedContainerBounds!.width / 2, 1.0) : math.max(containerRenderBox.size.width / 2, 1.0);
+      final maxDistance = _cachedContainerBounds != null ? math.max(_cachedContainerBounds!.width / 2, 1.0) : math.max(_cachedContainerRenderBox!.size.width / 2, 1.0);
 
       for (int i = 0; i < _chars.length; i++) {
         if (!mounted) break; // Check mounted state in loop
@@ -580,11 +648,16 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
           final charBounds = _cachedCharBounds![i];
           charCenter = Offset(charBounds.left, charBounds.top);
         } else {
-          // Fallback to real-time bounds for smooth interaction
-          final charContext = _charKeys[i].currentContext;
-          if (!mounted || charContext == null) continue;
+          // Try to use cached RenderBox first
+          RenderBox? charRenderBox = i < _cachedCharRenderBoxes.length ? _cachedCharRenderBoxes[i] : null;
 
-          final charRenderBox = charContext.findRenderObject() as RenderBox?;
+          if (charRenderBox == null) {
+            // Fallback to real-time bounds for smooth interaction
+            final charContext = _charKeys[i].currentContext;
+            if (!mounted || charContext == null) continue;
+            charRenderBox = charContext.findRenderObject() as RenderBox?;
+          }
+
           if (charRenderBox == null || !charRenderBox.hasSize) continue;
 
           final charPosition = charRenderBox.localToGlobal(Offset.zero);
@@ -595,19 +668,20 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
           );
         }
 
-        final distance = _calculateDistance(localMousePosition, charCenter);
+        final squaredDistance = _calculateSquaredDistance(localMousePosition, charCenter);
+        final maxSquaredDistance = maxDistance * maxDistance; // Use squared max distance
 
-        double _getAttribute(double distance, double minVal, double maxVal) {
-          if (maxDistance <= 0 || !distance.isFinite || !maxDistance.isFinite) return minVal;
-          final val = maxVal - math.min(maxVal, (maxVal * distance) / maxDistance);
+        double _getAttribute(double squaredDist, double minVal, double maxVal) {
+          if (maxSquaredDistance <= 0 || !squaredDist.isFinite || !maxSquaredDistance.isFinite) return minVal;
+          final val = maxVal - math.min(maxVal, (maxVal * squaredDist) / maxSquaredDistance);
           final result = math.max(minVal, val + minVal);
           return result.isFinite ? result : minVal;
         }
 
-        double wdth = widget.width ? _getAttribute(distance, 5, 200).clamp(1, 1000) : 100;
-        double wght = widget.weight ? _getAttribute(distance, 200, 900).clamp(100, 1000) : 400;
-        double ital = widget.italic ? _getAttribute(distance, 0, 1).clamp(0, 1) : 0;
-        double opacity = widget.alpha ? _getAttribute(distance, 0.6, 1).clamp(0, 1) : 1.0;
+        double wdth = widget.width ? _getAttribute(squaredDistance, 5, 200).clamp(1, 1000) : 100;
+        double wght = widget.weight ? _getAttribute(squaredDistance, 200, 900).clamp(100, 1000) : 400;
+        double ital = widget.italic ? _getAttribute(squaredDistance, 0, 1).clamp(0, 1) : 0;
+        double opacity = widget.alpha ? _getAttribute(squaredDistance, 0.6, 1).clamp(0, 1) : 1.0;
 
         // Safety checks
         if (!wdth.isFinite) wdth = 100;
@@ -635,12 +709,12 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
     }
   }
 
-  double _calculateDistance(Offset point1, Offset point2) {
+  double _calculateSquaredDistance(Offset point1, Offset point2) {
     try {
-      // Only calculate distance based on x-axis (dx)
+      // Only calculate squared distance based on x-axis (dx) - avoid expensive sqrt
       final dx = point2.dx - point1.dx;
-      final distance = dx.abs();
-      return distance.isFinite ? distance : 0.0;
+      final squaredDistance = dx * dx;
+      return squaredDistance.isFinite ? squaredDistance : 0.0;
     } catch (e) {
       return 0.0;
     }
@@ -690,10 +764,12 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
           children: [
             Positioned.fill(
               child: Center(
-                child: Transform.scale(
-                  scaleY: _scaleY.clamp(0.1, 5.0),
-                  scaleX: 1.0,
-                  child: widget.flex ? _buildFlexText() : _buildRegularText(),
+                child: RepaintBoundary(
+                  child: Transform.scale(
+                    scaleY: _scaleY.clamp(0.1, 5.0),
+                    scaleX: 1.0,
+                    child: widget.flex ? _buildFlexText() : _buildRegularText(),
+                  ),
                 ),
               ),
             ),
@@ -818,9 +894,11 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
         );
       }
 
-      return Opacity(
-        opacity: opacity,
-        child: characterWidget,
+      return RepaintBoundary(
+        child: Opacity(
+          opacity: opacity,
+          child: characterWidget,
+        ),
       );
     } catch (e) {
       _handleError('buildCharacter', e);
