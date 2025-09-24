@@ -21,6 +21,7 @@ class MyApp extends StatelessWidget {
     print('isRunningWithWasm: $isRunningWithWasm');
     return MaterialApp(
       title: 'Théo Grillat',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
       ),
