@@ -20,11 +20,13 @@ class AboutView extends StatelessWidget {
     super.key,
     required this.boxSize,
     required this.goHome,
+    required this.goSkills,
     required this.homeModel,
   });
 
   final double boxSize;
   final Function goHome;
+  final Function goSkills;
   final HomeViewmodel homeModel;
 
   @override
@@ -145,7 +147,7 @@ class AboutView extends StatelessWidget {
                 box: box,
                 mousePositionStream: homeModel.cursorPositionStream,
                 onHovering: homeModel.onHovering,
-                onTap: goHome,
+                onTap: goSkills,
                 invert: false,
                 child: (hovering) => Center(
                   child: AnimatedSkew(

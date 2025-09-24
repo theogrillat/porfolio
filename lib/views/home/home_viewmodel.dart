@@ -12,11 +12,13 @@ enum NavigationState {
   project,
   about,
   contact,
+  skills,
 }
 
 const landingBoxCount = 8;
 const projectBoxCount = 10;
 const aboutBoxCount = 8;
+const skillsBoxCount = 8;
 
 class HomeViewmodel extends BaseViewModel {
   // NAVIGATION
@@ -28,6 +30,7 @@ class HomeViewmodel extends BaseViewModel {
     if (_navigationState == NavigationState.project) return 'le projet ${_currentProject?.title ?? ''}'.toUpperCase();
     if (_navigationState == NavigationState.about) return 'la page qui suis-je ?'.toUpperCase();
     if (_navigationState == NavigationState.contact) return 'la page contact'.toUpperCase();
+    if (_navigationState == NavigationState.skills) return 'la page compétences'.toUpperCase();
     return '';
   }
 
@@ -35,6 +38,7 @@ class HomeViewmodel extends BaseViewModel {
     if (_navigationState == NavigationState.home) return landingBoxCount;
     if (_navigationState == NavigationState.project) return projectBoxCount;
     if (_navigationState == NavigationState.about) return aboutBoxCount;
+    if (_navigationState == NavigationState.skills) return skillsBoxCount;
     return 0;
   }
 
@@ -63,6 +67,13 @@ class HomeViewmodel extends BaseViewModel {
     });
   }
 
+  Future<void> goToSkills() async {
+    await performTransition(() {
+      _navigationState = NavigationState.skills;
+      notifyListeners();
+    });
+  }
+
   Future<void> performTransition(Function callback) async {
     await hideGridItems();
     callback();
@@ -80,7 +91,8 @@ class HomeViewmodel extends BaseViewModel {
   final Duration _transitionDuration = const Duration(milliseconds: 600);
   Duration get transitionDuration => _transitionDuration;
 
-  final Duration _itemTransitionDuration = const Duration(milliseconds: 1000);
+  // final Duration _itemTransitionDuration = const Duration(milliseconds: 1000);
+  final Duration _itemTransitionDuration = const Duration(milliseconds: 100);
   Duration get itemTransitionDuration => _itemTransitionDuration;
 
   final Curve _transitionCurve = Curves.easeInOut;

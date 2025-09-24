@@ -1,0 +1,224 @@
+{
+    "avatar": "https://firebasestorage.googleapis.com/v0/b/portfolio-e02b7.firebasestorage.app/o/portfolioAvatar.jpg?alt=media&token=19852d10-907b-4405-a5b7-03c8ff1e0315\n",
+    "bio": "Développeur web/mobile depuis plus de 5 ans, geek et entrepreneur, j'ai réalisé de nombreuses applications web & mobiles autant pour des clients (peut-être vous ?) que pour mes nombreux projets personnels.  \nJe me spécialise dans les interactions innovantes, plus particulièrement les interactions en temps réel entre clients.  \n  \nGrace à mes proches collaborateurs et mon cercle familial avec lesquels j'évolue depuis longtemps dans des contextes de crises (restructuring et opérations complexes), je possède une vrai vision business, que trop peu de développeurs possèdes. Cette vision est, pourtant, souvent critique pour le bon déroulement de projets IT.  \n  \n*Le digital n'ai aujourd’hui plus réservé aux secteurs spécialisée, mais bien une partie centrale du business de toute entreprises solide.*  \n  \nMa stack de prédilection (non-exhaustif):  \n  \n🖥 Front-end: **Vue.js/Vuex/PWA**  \n📱 Mobile: **Flutter/Ionic**  \n☁️ Back-end: **Firebase/Node.js/Express.js**  \n🚅 Real-Time: **WebSockets/Socket.io/Pusher.js/Firestore**  \n  \nJ'ai aussi une expertise UX/UI pour vous accompagner sur ces thématiques.  \n  \nJe réalise des solutions complètes clés en main (Web Apps / Apps Mobile IOS/Android)  \n  \nJe suis friand de projets **innovants**, **complexes** et **atypiques**.  \nJe serais ravie que l'on discute du vôtre ensemble !",
+    "mainSkills": [
+      "Dart",
+      "TypeScript",
+      "JavaScript",
+      "Swift",
+      "Python",
+      "Kotlin",
+      "Vue",
+      "Svelte",
+      "Nuxt.js",
+      "SvelteKit",
+      "Tailwind CSS",
+      "HTML5",
+      "CSS3",
+      "Flutter",
+      "iOS",
+      "Android",
+      "PWA",
+      "Node.js",
+      "Deno",
+      "REST",
+      "GraphQL",
+      "Firestore",
+      "MongoDB",
+      "PostgreSQL",
+      "SQL optimization",
+      "GCP",
+      "Firebase",
+      "AWS",
+      "Docker",
+      "CI/CD",
+      "MVVM",
+      "SOLID",
+      "Clean Architecture",
+      "Microservices",
+      "Git",
+      "Automated testing",
+      "Monitoring",
+      "Analytics",
+      "Agile/Scrum",
+      "Jira",
+      "Linear",
+      "Code review",
+      "AI/ML integration",
+      "Payment (Stripe)",
+      "Auth",
+      "Messaging",
+      "Caching"
+    ],
+    "skillCategories": [
+      {
+        "name": "Languages",
+        "skills": [
+          "Dart",
+          "TypeScript",
+          "JavaScript",
+          "Swift",
+          "Python",
+          "Kotlin"
+        ]
+      },
+      {
+        "name": "Front Web",
+        "skills": [
+          "Vue",
+          "Svelte",
+          "Nuxt.js",
+          "SvelteKit",
+          "Tailwind CSS",
+          "Shadcn UI",
+          "SASS",
+          "HTML5",
+          "CSS3",
+          "Responsive Design",
+          "a11y",
+          "Webpack",
+          "Vite",
+          "PWA"
+        ]
+      },
+      {
+        "name": "Mobile",
+        "skills": [
+          "Flutter",
+          "Ionic",
+          "PWA",
+          "App Store",
+          "Google Play",
+          "App Distribution",
+          "TestFlight"
+        ]
+      },
+      {
+        "name": "Flutter",
+        "skills": [
+          "Riverpod",
+          "BloC",
+          "Stacked",
+          "MVVM",
+          "Clean",
+          "Web",
+          "Windows",
+          "MacOS",
+          "Linux",
+          "Android",
+          "IOS",
+          "Provider"
+        ]
+      },
+      {
+        "name": "Backend",
+        "skills": [
+          "Node.js",
+          "Deno",
+          "Serverpod",
+          "Shelf",
+          "Express.js",
+          "REST",
+          "GraphQL",
+          "OpenAPI",
+          "Swagger",
+          "0Auth",
+          "WebSockets"
+        ]
+      },
+      {
+        "name": "Données",
+        "skills": [
+          "Firestore",
+          "MongoDB",
+          "PostgreSQL",
+          "SQLite",
+          "Vector",
+          "Data modeling",
+          "Redis"
+        ]
+      },
+      {
+        "name": "Cloud / Infra",
+        "skills": [
+          "GCP",
+          "Firebase",
+          "AWS",
+          "Cloud Functions",
+          "Docker",
+          "Serverless",
+          "Networking basics"
+        ]
+      },
+      {
+        "name": "DevOps",
+        "skills": [
+          "GitHub Actions",
+          "Docker",
+          "Datadog",
+          "Sentry",
+          "Fastlane",
+          "Codemagic",
+          "Git Workflow"
+        ]
+      },
+      {
+        "name": "Architecture",
+        "skills": [
+          "Design Patterns",
+          "MVVM",
+          "Clean",
+          "SOLID",
+          "Microservices",
+          "State management"
+        ]
+      },
+      {
+        "name": "Collaboration",
+        "skills": [
+          "Agile",
+          "SCRUM",
+          "Kanban",
+          "Jira",
+          "Linear",
+          "Code review",
+          "Pair Programming",
+          "Cross-fonctionnel",
+          "Empathie",
+          "Adaptabilité"
+        ]
+      },
+      {
+        "name": "Workflow",
+        "skills": [
+          "Git",
+          "TDD",
+          "Linting",
+          "CI/CD",
+          "Documentation"
+        ]
+      },
+      {
+        "name": "Monitoring",
+        "skills": [
+          "Sentry",
+          "Datadog",
+          "Firebase Analytics",
+          "Crashlytics"
+        ]
+      },
+      {
+        "name": "Divers",
+        "skills": [
+          "Gestion de projet",
+          "i18n",
+          "UI/UX",
+          "MCP servers",
+          "API AI/ML",
+          "Authentication",
+          "Pub/Sub",
+          "Stripe"
+        ]
+      }
+    ]
+  }

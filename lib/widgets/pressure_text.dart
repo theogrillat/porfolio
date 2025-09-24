@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -64,6 +65,11 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
   final GlobalKey _containerKey = GlobalKey();
   final GlobalKey _titleKey = GlobalKey();
 
+  // Track pending operations for proper cleanup
+  Future<void>? _pendingFontLoad;
+  Future<void>? _pendingSizeCalculation;
+  Future<void>? _pendingVerticalCalculation;
+
   // Performance optimization caches
   List<Rect>? _cachedCharBounds;
   Rect? _cachedContainerBounds;
@@ -82,6 +88,43 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
   // Safety throttling when system is under pressure
   bool _isThrottled = false;
   int _framesSinceLastCheck = 0;
+
+  // Flag to prevent execution during disposal
+  bool _isDisposing = false;
+
+  // WASM/Web compatibility check
+  bool get _isWeb => kIsWeb;
+
+  // WASM-safe font variation helper
+  List<FontVariation> _createSafeFontVariations(double wght, double wdth, double ital) {
+    List<FontVariation> variations = [];
+
+    if (_isWeb) {
+      // WASM-safe ranges for CanvasKit compatibility
+      if (widget.weight && wght.isFinite) {
+        // Limit weight range for WASM stability (100-900 is safest)
+        final safeWght = wght.clamp(100.0, 900.0);
+        variations.add(FontVariation('wght', safeWght));
+      }
+      if (widget.width && wdth.isFinite) {
+        // Limit width range for WASM stability (75-125 is safest for most fonts)
+        final safeWdth = wdth.clamp(75.0, 125.0);
+        variations.add(FontVariation('wdth', safeWdth));
+      }
+      if (widget.italic && ital.isFinite) {
+        // Limit italic range for WASM stability (0-1 is safest)
+        final safeItal = ital.clamp(0.0, 1.0);
+        variations.add(FontVariation('ital', safeItal));
+      }
+    } else {
+      // Full ranges for native platforms
+      if (widget.weight && wght.isFinite) variations.add(FontVariation('wght', wght));
+      if (widget.width && wdth.isFinite) variations.add(FontVariation('wdth', wdth));
+      if (widget.italic && ital.isFinite) variations.add(FontVariation('ital', ital));
+    }
+
+    return variations;
+  }
 
   @override
   void initState() {
@@ -127,9 +170,9 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _calculateSize();
+          _pendingSizeCalculation = _calculateSize();
           if (widget.boxSize != null) {
-            _calculateVerticalOffsetOfText(widget.boxSize!);
+            _pendingVerticalCalculation = _calculateVerticalOffsetOfText(widget.boxSize!);
           }
           setState(() {});
         }
@@ -158,8 +201,8 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            _calculateSize();
-            Future.delayed(Duration(milliseconds: 50), () {
+            _pendingSizeCalculation = _calculateSize();
+            _pendingVerticalCalculation = Future.delayed(Duration(milliseconds: 50), () {
               if (mounted && widget.boxSize != null) {
                 _calculateVerticalOffsetOfText(widget.boxSize!);
                 setState(() {
@@ -177,8 +220,53 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
 
   @override
   void dispose() {
+    // Set disposal flag to prevent any further execution
+    _isDisposing = true;
+
+    // Cancel pending operations
+    _pendingFontLoad?.ignore();
+    _pendingSizeCalculation?.ignore();
+    _pendingVerticalCalculation?.ignore();
+
+    // Remove animation listener first to prevent callbacks during disposal
+    _animationController.removeListener(_animateMouseFollow);
+
+    // Stop and dispose animation controller
+    _animationController.stop();
     _animationController.dispose();
+
+    // Cancel stream subscription
     _mouseStreamSubscription?.cancel();
+
+    // Clear cached data to free memory (safely handle immutable lists)
+    try {
+      _cachedCharBounds?.clear();
+    } catch (e) {
+      // Ignore clear errors for immutable lists
+    }
+    _cachedCharBounds = null;
+    _cachedContainerBounds = null;
+
+    try {
+      _cachedStyles?.clear();
+    } catch (e) {
+      // Ignore clear errors for immutable lists
+    }
+    _cachedStyles = null;
+
+    // Clear character arrays (safely handle immutable lists)
+    try {
+      _chars.clear();
+    } catch (e) {
+      // Ignore clear errors for immutable lists
+    }
+
+    try {
+      _charKeys.clear();
+    } catch (e) {
+      // Ignore clear errors for immutable lists
+    }
+
     super.dispose();
   }
 
@@ -188,7 +276,13 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
 
     if (_errorCount > MAX_ERRORS) {
       print('Too many errors, disabling complex animations');
-      _animationController.stop();
+      try {
+        if (mounted) {
+          _animationController.stop();
+        }
+      } catch (e) {
+        // Ignore errors when stopping animation controller
+      }
     }
   }
 
@@ -206,15 +300,24 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
 
   Future<void> _loadFontFromUrl() async {
     if (widget.fontUrl == null || widget.fontUrl!.isEmpty) {
-      setState(() {
-        _effectiveFontFamily = widget.fontFamily;
-        _fontLoaded = true;
-      });
+      if (mounted) {
+        setState(() {
+          _effectiveFontFamily = widget.fontFamily;
+          _fontLoaded = true;
+        });
+      }
       return;
     }
 
+    // Store the future to allow cancellation
+    _pendingFontLoad = _performFontLoad();
+    await _pendingFontLoad;
+  }
+
+  Future<void> _performFontLoad() async {
+    http.Response? response;
     try {
-      final response = await http.get(Uri.parse(widget.fontUrl!)).timeout(Duration(seconds: 10));
+      response = await http.get(Uri.parse(widget.fontUrl!)).timeout(Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final fontLoader = FontLoader(widget.fontFamily);
@@ -239,10 +342,13 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
           _fontLoaded = true;
         });
       }
+    } finally {
+      // Response will be automatically garbage collected
+      // No explicit disposal needed for http.Response
     }
   }
 
-  void _calculateSize() {
+  Future<void> _calculateSize() async {
     if (!mounted || _chars.isEmpty) return;
 
     try {
@@ -250,7 +356,10 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
       if (widget.boxSize != null) {
         containerSize = widget.boxSize!;
       } else {
-        final containerRenderBox = _containerKey.currentContext?.findRenderObject() as RenderBox?;
+        final context = _containerKey.currentContext;
+        if (!mounted || context == null) return;
+
+        final containerRenderBox = context.findRenderObject() as RenderBox?;
         if (containerRenderBox == null || !containerRenderBox.hasSize) return;
         containerSize = containerRenderBox.size;
       }
@@ -280,7 +389,7 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            Future.delayed(Duration(milliseconds: 50), () {
+            _pendingVerticalCalculation = Future.delayed(Duration(milliseconds: 50), () {
               if (mounted) {
                 _calculateVerticalScale(containerSize);
                 _calculateVerticalOffsetOfText(containerSize);
@@ -301,7 +410,10 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
     if (!mounted) return;
 
     try {
-      final titleRenderBox = _titleKey.currentContext?.findRenderObject() as RenderBox?;
+      final context = _titleKey.currentContext;
+      if (!mounted || context == null) return;
+
+      final titleRenderBox = context.findRenderObject() as RenderBox?;
       if (titleRenderBox == null || !titleRenderBox.hasSize) return;
 
       final titleSize = titleRenderBox.size;
@@ -321,11 +433,14 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
     }
   }
 
-  void _calculateVerticalOffsetOfText(Size containerSize) {
+  Future<void> _calculateVerticalOffsetOfText(Size containerSize) async {
     if (!mounted) return;
 
     try {
-      final titleRenderBox = _titleKey.currentContext?.findRenderObject() as RenderBox?;
+      final context = _titleKey.currentContext;
+      if (!mounted || context == null) return;
+
+      final titleRenderBox = context.findRenderObject() as RenderBox?;
       if (titleRenderBox == null || !titleRenderBox.hasSize) return;
 
       final titleSize = titleRenderBox.size;
@@ -345,7 +460,10 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
   }
 
   void _animateMouseFollow() {
-    if (!mounted || _errorCount > MAX_ERRORS) return;
+    if (!mounted || _errorCount > MAX_ERRORS || _isDisposing) return;
+
+    // Additional safety check - ensure widget is still part of the tree
+    if (_containerKey.currentContext == null) return;
 
     try {
       // Check for system pressure every 60 frames (0.5 seconds)
@@ -384,10 +502,14 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
   }
 
   void _updateCharacterBounds() {
-    if (!mounted) return;
+    if (!mounted || _isDisposing) return;
 
     try {
-      final containerRenderBox = _containerKey.currentContext?.findRenderObject() as RenderBox?;
+      // Double-check mounted state and context validity
+      final context = _containerKey.currentContext;
+      if (!mounted || context == null) return;
+
+      final containerRenderBox = context.findRenderObject() as RenderBox?;
       if (containerRenderBox == null || !containerRenderBox.hasSize) return;
 
       // Update container bounds
@@ -398,7 +520,12 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
 
       // Only update bounds for characters that actually exist and have render boxes
       for (int i = 0; i < _charKeys.length; i++) {
-        final charRenderBox = _charKeys[i].currentContext?.findRenderObject() as RenderBox?;
+        if (!mounted) break; // Check mounted state in loop
+
+        final charContext = _charKeys[i].currentContext;
+        if (charContext == null) continue;
+
+        final charRenderBox = charContext.findRenderObject() as RenderBox?;
         if (charRenderBox != null && charRenderBox.hasSize) {
           final charPosition = charRenderBox.localToGlobal(Offset.zero);
           final charSize = charRenderBox.size;
@@ -422,11 +549,15 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
   }
 
   void _updateCharacterStyles() {
-    if (!mounted) return;
+    if (!mounted || _isDisposing) return;
 
     try {
+      // Double-check mounted state and context validity
+      final context = _containerKey.currentContext;
+      if (!mounted || context == null) return;
+
       // Get fresh container position for accurate mouse tracking
-      final containerRenderBox = _containerKey.currentContext?.findRenderObject() as RenderBox?;
+      final containerRenderBox = context.findRenderObject() as RenderBox?;
       if (containerRenderBox == null || !containerRenderBox.hasSize) return;
 
       final containerPosition = containerRenderBox.localToGlobal(Offset.zero);
@@ -437,10 +568,11 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
       );
 
       // Use cached bounds if available, otherwise get fresh bounds
-      final maxDistance =
-          _cachedContainerBounds != null ? math.max(_cachedContainerBounds!.width / 2, 1.0) : math.max(containerRenderBox.size.width / 2, 1.0);
+      final maxDistance = _cachedContainerBounds != null ? math.max(_cachedContainerBounds!.width / 2, 1.0) : math.max(containerRenderBox.size.width / 2, 1.0);
 
       for (int i = 0; i < _chars.length; i++) {
+        if (!mounted) break; // Check mounted state in loop
+
         Offset charCenter;
 
         // Use cached bounds if available and recent, otherwise calculate fresh
@@ -449,7 +581,10 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
           charCenter = Offset(charBounds.left, charBounds.top);
         } else {
           // Fallback to real-time bounds for smooth interaction
-          final charRenderBox = _charKeys[i].currentContext?.findRenderObject() as RenderBox?;
+          final charContext = _charKeys[i].currentContext;
+          if (!mounted || charContext == null) continue;
+
+          final charRenderBox = charContext.findRenderObject() as RenderBox?;
           if (charRenderBox == null || !charRenderBox.hasSize) continue;
 
           final charPosition = charRenderBox.localToGlobal(Offset.zero);
@@ -480,13 +615,14 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
         if (!ital.isFinite) ital = 0;
         if (!opacity.isFinite) opacity = 1.0;
 
-        List<FontVariation> variations = [];
-        if (widget.weight && wght.isFinite) variations.add(FontVariation('wght', wght));
-        if (widget.width && wdth.isFinite) variations.add(FontVariation('wdth', wdth));
-        if (widget.italic && ital.isFinite) variations.add(FontVariation('ital', ital));
+        // Use WASM-safe font variations
+        List<FontVariation> variations = _createSafeFontVariations(wght, wdth, ital);
 
         int weightIndex = ((wght - 100) / 100).clamp(0, 8).round();
         weightIndex = math.min(weightIndex, FontWeight.values.length - 1);
+
+        // Check mounted state before updating cached styles
+        if (!mounted || _cachedStyles == null || i >= _cachedStyles!.length) continue;
 
         _cachedStyles![i] = {
           'fontWeight': FontWeight.values[weightIndex],
@@ -618,22 +754,44 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
       // Safe font size
       final safeFontSize = _fontSize.clamp(8.0, 500.0);
 
+      // Create text style with WASM-safe error handling
+      TextStyle createSafeTextStyle({Paint? foreground, Color? color}) {
+        try {
+          return TextStyle(
+            fontFamily: _effectiveFontFamily,
+            fontSize: safeFontSize,
+            fontWeight: charStyle['fontWeight'] as FontWeight,
+            fontVariations: fontVariations,
+            foreground: foreground,
+            color: color,
+            height: 0.7,
+            letterSpacing: 0,
+            textBaseline: TextBaseline.alphabetic,
+            leadingDistribution: TextLeadingDistribution.even,
+          );
+        } catch (e) {
+          // Fallback without font variations if WASM crashes
+          _handleError('TextStyle with fontVariations', e);
+          return TextStyle(
+            fontFamily: _effectiveFontFamily,
+            fontSize: safeFontSize,
+            fontWeight: charStyle['fontWeight'] as FontWeight,
+            foreground: foreground,
+            color: color,
+            height: 0.7,
+            letterSpacing: 0,
+            textBaseline: TextBaseline.alphabetic,
+            leadingDistribution: TextLeadingDistribution.even,
+          );
+        }
+      }
+
       Widget characterWidget = Transform.translate(
         offset: Offset(0, -_offsetY.clamp(-100.0, 100.0)),
         child: Text(
           char,
           key: _charKeys[index],
-          style: TextStyle(
-            fontFamily: _effectiveFontFamily,
-            fontSize: safeFontSize,
-            fontWeight: charStyle['fontWeight'] as FontWeight,
-            fontVariations: fontVariations,
-            color: widget.stroke ? null : widget.textColor,
-            height: 0.7,
-            letterSpacing: 0,
-            textBaseline: TextBaseline.alphabetic,
-            leadingDistribution: TextLeadingDistribution.even,
-          ),
+          style: createSafeTextStyle(color: widget.stroke ? null : widget.textColor),
         ),
       );
 
@@ -644,35 +802,17 @@ class _TextPressureState extends State<TextPressure> with SingleTickerProviderSt
             // Stroke layer
             Text(
               char,
-              style: TextStyle(
-                fontFamily: _effectiveFontFamily,
-                fontSize: safeFontSize,
-                fontWeight: charStyle['fontWeight'] as FontWeight,
-                fontVariations: fontVariations,
+              style: createSafeTextStyle(
                 foreground: Paint()
                   ..style = PaintingStyle.stroke
                   ..strokeWidth = 3.0
                   ..color = widget.strokeColor,
-                height: 0.7,
-                letterSpacing: 0,
-                textBaseline: TextBaseline.alphabetic,
-                leadingDistribution: TextLeadingDistribution.even,
               ),
             ),
             // Fill layer
             Text(
               char,
-              style: TextStyle(
-                fontFamily: _effectiveFontFamily,
-                fontSize: safeFontSize,
-                fontWeight: charStyle['fontWeight'] as FontWeight,
-                fontVariations: fontVariations,
-                color: widget.textColor,
-                height: 0.7,
-                letterSpacing: 0,
-                textBaseline: TextBaseline.alphabetic,
-                leadingDistribution: TextLeadingDistribution.even,
-              ),
+              style: createSafeTextStyle(color: widget.textColor),
             ),
           ],
         );

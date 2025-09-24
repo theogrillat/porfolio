@@ -5,6 +5,7 @@ import 'package:portfolio/shared/styles.dart';
 import 'package:portfolio/views/about/about_view.dart';
 import 'package:portfolio/views/home/home_viewmodel.dart';
 import 'package:portfolio/views/project/project_view.dart';
+import 'package:portfolio/views/skills/skills_view.dart';
 import 'package:portfolio/widgets/animated_skew.dart';
 import 'package:portfolio/widgets/boxbutton.dart';
 import 'package:portfolio/widgets/pressure_text.dart';
@@ -118,7 +119,14 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                                           AboutView(
                                             boxSize: boxSize,
                                             goHome: model.goToHome,
+                                            goSkills: model.goToSkills,
                                             homeModel: model,
+                                          ),
+                                        if (model.navigationState == NavigationState.skills)
+                                          SkillsView(
+                                            boxSize: boxSize,
+                                            homeModel: model,
+                                            goBack: model.goToAbout,
                                           ),
                                       ],
                                     ),
@@ -300,8 +308,8 @@ class LandingView extends StatelessWidget {
                     child: TextPressure(
                       text: 'GRILLAT',
                       minFontSize: boxSize * 1.3,
-                      textColor: model.foregroundColor,
-                      strokeColor: model.backgroundColor,
+                      textColor: box.foreground,
+                      strokeColor: box.background,
                       fontFamily: 'Compressa VF',
                       fontUrl: 'https://res.cloudinary.com/dr6lvwubh/raw/upload/v1529908256/CompressaPRO-GX.woff2',
                       width: true,

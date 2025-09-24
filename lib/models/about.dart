@@ -20,9 +20,23 @@ class About {
         mainSkills = (data['mainSkills'] ?? []).cast<String>();
 }
 
+class Skill {
+  final String name;
+  final int level;
+
+  Skill({
+    required this.name,
+    required this.level,
+  });
+
+  Skill.fromMap(Map<String, dynamic> data)
+      : name = data['name'] ?? '',
+        level = data['level'] ?? 0;
+}
+
 class SkillCategory {
   final String name;
-  final List<String> skills;
+  final List<Skill> skills;
 
   SkillCategory({
     required this.name,
@@ -31,5 +45,5 @@ class SkillCategory {
 
   SkillCategory.fromMap(Map<String, dynamic> data)
       : name = data['name'] ?? '',
-        skills = ((data['skills'] ?? []) as List<dynamic>).map((e) => e.toString()).toList();
+        skills = ((data['skills'] ?? []) as List<dynamic>).map((e) => Skill.fromMap(e as Map<String, dynamic>)).toList();
 }

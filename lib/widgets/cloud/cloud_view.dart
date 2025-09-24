@@ -16,8 +16,10 @@ class CloudView extends StatefulWidget {
     required this.backgroundColor,
     required this.topViewportOffset,
     required this.leftViewportOffset,
+    this.invertDirection = false,
     this.tagSize = 16,
     this.blur = true,
+    this.tagBuilder,
   });
 
   final List<String> tags;
@@ -31,7 +33,8 @@ class CloudView extends StatefulWidget {
   final double leftViewportOffset;
   final double? tagSize;
   final bool blur;
-
+  final bool invertDirection;
+  final Widget Function(String tag)? tagBuilder;
   @override
   State<CloudView> createState() => _CloudViewState();
 }
@@ -60,6 +63,7 @@ class _CloudViewState extends State<CloudView> {
         leftViewportOffset: widget.leftViewportOffset,
         foregroundColor: widget.foregroundColor,
         tagSize: widget.tagSize ?? 16,
+        invertDirection: widget.invertDirection,
       ),
       onDispose: (model) => model.onDispose(),
       builder: (context, model, child) {
@@ -133,32 +137,34 @@ class _CloudViewState extends State<CloudView> {
                     opacity: opacity,
                     child: Transform.scale(
                       scale: scale,
-                      child: Container(
-                        width: textWidth,
-                        height: textHeight,
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        child: ClipRect(
-                          child: widget.blur && blurRadius > 0
-                              ? ImageFiltered(
-                                  imageFilter: ImageFilter.blur(sigmaX: blurRadius, sigmaY: blurRadius),
-                                  child: Text(
-                                    tag.text,
-                                    style: textStyle,
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                )
-                              : Text(
-                                  tag.text,
-                                  style: textStyle,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                        ),
-                      ),
+                      child: widget.tagBuilder != null
+                          ? widget.tagBuilder!(tag.text)
+                          : Container(
+                              width: textWidth,
+                              height: textHeight,
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              child: ClipRect(
+                                child: widget.blur && blurRadius > 0
+                                    ? ImageFiltered(
+                                        imageFilter: ImageFilter.blur(sigmaX: blurRadius, sigmaY: blurRadius),
+                                        child: Text(
+                                          tag.text,
+                                          style: textStyle,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      )
+                                    : Text(
+                                        tag.text,
+                                        style: textStyle,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                              ),
+                            ),
                     ),
                   ),
                 );

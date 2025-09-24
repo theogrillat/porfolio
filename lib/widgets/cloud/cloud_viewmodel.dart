@@ -42,12 +42,14 @@ class CloudViewModel extends BaseViewModel {
   late double _topViewportOffset;
   late double _leftViewportOffset;
   late double _tagSize;
+  late bool _invertDirection;
   List<String> get tags => _tags;
   double get height => _height;
   double get width => _width;
   double get topViewportOffset => _topViewportOffset;
   double get leftViewportOffset => _leftViewportOffset;
   double get tagSize => _tagSize;
+  bool get invertDirection => _invertDirection;
   StreamSubscription<Offset?>? _mousePositionStream;
 
   Offset? _globalMousePosition;
@@ -443,6 +445,7 @@ class CloudViewModel extends BaseViewModel {
     required double leftViewportOffset,
     required Color foregroundColor,
     required double tagSize,
+    required bool invertDirection,
   }) {
     _tags = tags;
     _height = height;
@@ -450,6 +453,7 @@ class CloudViewModel extends BaseViewModel {
     _topViewportOffset = topViewportOffset;
     _leftViewportOffset = leftViewportOffset;
     _tagSize = tagSize;
+    _invertDirection = invertDirection;
     // foregroundColor is passed but not stored since we don't use TextPainter anymore
     _mousePositionStream = mousePositionStream.listen(updateMousePosition);
 
@@ -532,7 +536,8 @@ class CloudViewModel extends BaseViewModel {
         // For rolling ball: the rotation axis is perpendicular to movement direction
         // Movement direction: (_moveX, _moveY, 0)
         // Rotation axis: (-_moveY, _moveX, 0) - perpendicular in XY plane
-        final vm.Vector3 rotationAxis = vm.Vector3(_moveY, -_moveX, 0);
+        // Apply invert direction if needed
+        final vm.Vector3 rotationAxis = _invertDirection ? vm.Vector3(-_moveY, _moveX, 0) : vm.Vector3(_moveY, -_moveX, 0);
 
         // Safety check before normalization
         if (rotationAxis.length == 0 || !rotationAxis.length.isFinite) return;
@@ -624,9 +629,29 @@ class CloudViewModel extends BaseViewModel {
 
   void onDispose() {
     _mounted = false;
+
+    // Cancel all subscriptions and timers
     _mousePositionStream?.cancel();
+    _mousePositionStream = null;
+
     _animationTimer?.cancel();
+    _animationTimer = null;
+
     _debounceTimer?.cancel();
+    _debounceTimer = null;
+
     _notificationTimer?.cancel();
+    _notificationTimer = null;
+
+    // Clear collections and reset references
+    _sphereTags.clear();
+    _rotationMatrix = vm.Matrix3.identity();
+
+    // Clear position references
+    _globalMousePosition = null;
+    _localMousePosition = null;
+
+    // Reset notification state
+    _notificationPending = false;
   }
 }
