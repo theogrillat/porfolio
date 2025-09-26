@@ -47,6 +47,8 @@ dependencies:
   visibility_detector: ^0.4.0+2
   flutter_tilt: ^3.3.2
   vector_math: ^2.2.0
+  diacritic: ^0.1.6
+  sensors_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:
@@ -98,6 +100,9 @@ flutter:
         - asset: fonts/IBMPlexMono-Medium.ttf
         - asset: fonts/IBMPlexMono-SemiBold.ttf
         - asset: fonts/IBMPlexMono-Light.ttf
+    - family: Compressa VF
+      fonts:
+        - asset: fonts/CompressaPRO-GX.ttf
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package

@@ -16,7 +16,7 @@ class MdViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    TextStyle baseStyle = Typos().large(
+    TextStyle baseStyle = Typos(context).large(
       color: foreground,
       height: 1.2,
     );

@@ -1,5 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:portfolio/shared/utils.dart';
 
 Color hex(String hexString) {
   final buffer = StringBuffer();
@@ -9,10 +11,51 @@ Color hex(String hexString) {
 }
 
 class Constants {
+  // desktop
+  static int desktopYCount = 4;
+  static int desktopXCount = 7;
+  // mobile
+  static int mobileYCount = 7;
+  static int mobileXCount = 4;
+  // common
   static double edgeWidth = 4;
-  static int yCount = 4;
-  static int xCount = 7;
-  static double mainPadding = 80;
+  static double mainPadding(BuildContext context) {
+    double val = 10;
+    if (Breakpoints().isWide(context)) val = 80;
+    if (Breakpoints().isDesktop(context)) val = 50;
+    if (Breakpoints().isTablet(context)) val = 30;
+    if (Breakpoints().isMobile(context)) val = 10;
+    return val;
+  }
+
+  static double sidebarWidth(BuildContext context) {
+    if (isPortrait(context)) return 0;
+    if (Breakpoints().isWide(context)) return 80;
+    if (Breakpoints().isDesktop(context)) return 50;
+    if (Breakpoints().isTablet(context)) return 20;
+    if (Breakpoints().isMobile(context)) return 20;
+    return 20;
+  }
+
+  static int yCount(BuildContext context) {
+    double w = MediaQuery.of(context).size.width;
+    double h = MediaQuery.of(context).size.height;
+    if (h >= w * 1) {
+      return mobileYCount;
+    } else {
+      return desktopYCount;
+    }
+  }
+
+  static int xCount(BuildContext context) {
+    double w = MediaQuery.of(context).size.width;
+    double h = MediaQuery.of(context).size.height;
+    if (h >= w * 1) {
+      return mobileXCount;
+    } else {
+      return desktopXCount;
+    }
+  }
 }
 
 class Shades {
@@ -21,26 +64,47 @@ class Shades {
 }
 
 class FontSize {
-  final double _baseSize = 18;
-  double get nano => 0.6 * _baseSize; // 9,6
-  double get micro => 0.6875 * _baseSize; // 11
-  double get mini => 0.75 * _baseSize; // 12
-  double get small => 0.8125 * _baseSize; // 13
-  double get regular => 0.9375 * _baseSize; // 15
-  double get large => 1.125 * _baseSize; // 18
-  double get title1 => 2.25 * _baseSize; // 36
-  double get title2 => 1.5 * _baseSize; // 24
-  double get title3 => 1.25 * _baseSize; // 20
+  BuildContext context;
+  double get baseSize {
+
+    bool isWide = Breakpoints().isWide(context);
+    bool isDesktop = Breakpoints().isDesktop(context);
+    bool isTablet = Breakpoints().isTablet(context);
+    bool isMobile = Breakpoints().isMobile(context);
+
+    if (isWide) return 18.0;
+    if (isDesktop) return 16.0;
+    if (isTablet) return 11.0;
+    if (isMobile) return 9.0;
+
+    return 18.0;
+  }
+
+  double get nano => 0.6 * baseSize; // 9,6
+  double get micro => 0.6875 * baseSize; // 11
+  double get mini => 0.75 * baseSize; // 12
+  double get small => 0.8125 * baseSize; // 13
+  double get regular => 0.9375 * baseSize; // 15
+  double get large => 1.125 * baseSize; // 18
+  double get title1 => 2.25 * baseSize; // 36
+  double get title2 => 1.5 * baseSize; // 24
+  double get title3 => 1.25 * baseSize; // 20
+
+  FontSize(this.context);
 }
 
 class Typos {
+  BuildContext context;
+
+  Typos(this.context);
+
   TextStyle regular({
     Color? color,
     FontWeight? fontWeight,
     double? height,
   }) {
     return TextStyle(
-      fontSize: FontSize().regular,
+      fontSize: FontSize(context).regular,
       fontWeight: fontWeight ?? FontWeight.w700,
       fontFamily: 'GoshaSans',
       color: color ?? Shades.darkText,
@@ -54,7 +118,7 @@ class Typos {
     double? height,
   }) {
     return TextStyle(
-      fontSize: FontSize().large,
+      fontSize: FontSize(context).large,
       fontWeight: fontWeight ?? FontWeight.w700,
       fontFamily: 'GoshaSans',
       color: color ?? Shades.darkText,
@@ -68,7 +132,7 @@ class Typos {
     double? height,
   }) {
     return TextStyle(
-      fontSize: FontSize().large,
+      fontSize: FontSize(context).large,
       fontWeight: fontWeight ?? FontWeight.w700,
       fontFamily: 'ibmPlexMono',
       color: color ?? Shades.darkText,

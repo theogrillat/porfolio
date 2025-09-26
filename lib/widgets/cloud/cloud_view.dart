@@ -70,106 +70,128 @@ class _CloudViewState extends State<CloudView> {
         return SizedBox(
           width: widget.width,
           height: widget.height,
-          child: AnimatedOpacity(
-            opacity: model.showCloud ? 1 : 0,
-            duration: const Duration(milliseconds: 800),
-            curve: Curves.easeInOutCubicEmphasized,
-            child: Stack(
-              children: model.sphereTags.map((tag) {
-                // Calculate opacity based on depth (closer = more opaque) with safety checks
-                final double depthRange = 2 * model.sphereRadius;
-                final double normalizedDepth = depthRange > 0 ? ((tag.depth + model.sphereRadius) / depthRange).clamp(0.0, 1.0) : 0.5;
+          child: LayoutBuilder(
+            builder: (context, constraints) {
 
-                // Ensure normalized depth is finite
-                final double safeNormalizedDepth = normalizedDepth.isFinite ? normalizedDepth : 0.5;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                model.onResize(constraints.maxWidth, constraints.maxHeight);
+              });
 
-                final double opacity = (0.3 + (safeNormalizedDepth * 0.7)).clamp(0.1, 1.0); // Opacity between 0.1-1.0
-                final double inverseNormalizedDepth = 1 - safeNormalizedDepth;
-                final double blurThreshold = 0.3;
+              return AnimatedOpacity(
+                opacity: model.showCloud ? 1 : 0,
+                duration: const Duration(milliseconds: 800),
+                curve: Curves.easeInOutCubicEmphasized,
+                child: Stack(
+                  children: model.sphereTags.map((tag) {
+                    // Calculate opacity based on depth (closer = more opaque) with safety checks
+                    final double depthRange = 2 * model.sphereRadius;
+                    final double normalizedDepth = depthRange > 0 ? ((tag.depth + model.sphereRadius) / depthRange).clamp(0.0, 1.0) : 0.5;
 
-                // Calculate blur radius with safety bounds
-                double blurRadius = 0.0;
-                if (inverseNormalizedDepth > blurThreshold) {
-                  blurRadius = (inverseNormalizedDepth - blurThreshold) * 10;
-                }
-                // Clamp blur radius to safe values for WASM
-                blurRadius = blurRadius.clamp(0.0, 20.0);
-                if (!blurRadius.isFinite) blurRadius = 0.0;
+                    // Ensure normalized depth is finite
+                    final double safeNormalizedDepth = normalizedDepth.isFinite ? normalizedDepth : 0.5;
 
-                // Calculate scale factor based on depth
-                final double baseScale = 1.0;
-                final double depthScale = (0.5 + (safeNormalizedDepth * 0.8)).clamp(0.5, 1.3);
-                final double scale = baseScale * depthScale;
+                    final double opacity = (0.3 + (safeNormalizedDepth * 0.7)).clamp(0.1, 1.0); // Opacity between 0.1-1.0
+                    final double inverseNormalizedDepth = 1 - safeNormalizedDepth;
+                    final double blurThreshold = 0.3;
 
-                // Use pre-calculated text dimensions
-                final double textWidth = tag.textWidth;
-                final double textHeight = tag.textHeight;
+                    // Calculate blur radius with safety bounds
+                    double blurRadius = 0.0;
+                    if (inverseNormalizedDepth > blurThreshold) {
+                      blurRadius = (inverseNormalizedDepth - blurThreshold) * 10;
+                    }
+                    // Clamp blur radius to safe values for WASM
+                    blurRadius = blurRadius.clamp(0.0, 20.0);
+                    if (!blurRadius.isFinite) blurRadius = 0.0;
 
-                // Fixed base text style
-                final textStyle = Typos().large(color: widget.foregroundColor).copyWith(
-                      fontSize: widget.tagSize ?? 16.0, // Fixed size - we use scale for variations
-                      height: 1,
-                      fontWeight: FontWeight.w700,
-                    );
+                    // Calculate scale factor based on depth
+                    final double baseScale = 1.0;
+                    final double depthScale = (0.5 + (safeNormalizedDepth * 0.8)).clamp(0.5, 1.3);
+                    final double scale = baseScale * depthScale;
 
-                // Calculate position with safety checks
-                final double posX = tag.position2D.dx;
-                final double posY = tag.position2D.dy;
+                    // Use pre-calculated text dimensions
+                    final double textWidth = tag.textWidth;
+                    final double textHeight = tag.textHeight;
 
-                if (!posX.isFinite || !posY.isFinite) {
-                  return const SizedBox.shrink(); // Skip invalid positioned widgets
-                }
+                    // Fixed base text style
+                    final textStyle = Typos(context).large(color: widget.foregroundColor).copyWith(
+                          fontSize: widget.tagSize ?? 16.0, // Fixed size - we use scale for variations
+                          height: 1,
+                          fontWeight: FontWeight.w700,
+                        );
 
-                final double left = (posX - textWidth / 2).clamp(-textWidth, widget.width + textWidth);
-                final double top = (posY - textHeight / 2).clamp(-textHeight, widget.height + textHeight);
+                    // Calculate position with safety checks
+                    final double posX = tag.position2D.dx;
+                    final double posY = tag.position2D.dy;
 
-                // Additional safety checks for WASM compatibility
-                if (textWidth <= 0 || textHeight <= 0 || !textWidth.isFinite || !textHeight.isFinite) {
-                  return const SizedBox.shrink();
-                }
+                    if (!posX.isFinite || !posY.isFinite) {
+                      return const SizedBox.shrink(); // Skip invalid positioned widgets
+                    }
 
-                return Positioned(
-                  left: left,
-                  top: top,
-                  width: textWidth,
-                  height: textHeight,
-                  child: Opacity(
-                    opacity: opacity,
-                    child: Transform.scale(
-                      scale: scale,
-                      child: widget.tagBuilder != null
-                          ? widget.tagBuilder!(tag.text)
-                          : Container(
-                              width: textWidth,
-                              height: textHeight,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              child: ClipRect(
-                                child: widget.blur && blurRadius > 0
-                                    ? ImageFiltered(
-                                        imageFilter: ImageFilter.blur(sigmaX: blurRadius, sigmaY: blurRadius),
-                                        child: Text(
-                                          tag.text,
-                                          style: textStyle,
-                                          textAlign: TextAlign.center,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                    final double left = (posX - textWidth / 2).clamp(-textWidth, widget.width + textWidth);
+                    final double top = (posY - textHeight / 2).clamp(-textHeight, widget.height + textHeight);
+
+                    // Additional safety checks for WASM compatibility
+                    if (textWidth <= 0 || textHeight <= 0 || !textWidth.isFinite || !textHeight.isFinite) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Transform.translate(
+                      key: ValueKey(tag.id),
+                      offset: Offset(left, top),
+                      child: SizedBox(
+                        width: textWidth,
+                        height: textHeight,
+                        child: Opacity(
+                          opacity: opacity,
+                          child: Transform.scale(
+                            scale: scale,
+                            child: widget.tagBuilder != null
+                                ? widget.tagBuilder!(tag.text)
+                                : tag.text == '•'
+                                    ? Center(
+                                        child: Container(
+                                          width: 2,
+                                          height: 2,
+                                          decoration: BoxDecoration(
+                                            color: widget.foregroundColor.withValues(alpha: 0.3),
+                                            borderRadius: BorderRadius.circular(2),
+                                          ),
                                         ),
                                       )
-                                    : Text(
-                                        tag.text,
-                                        style: textStyle,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                    : Container(
+                                        width: textWidth,
+                                        height: textHeight,
+                                        alignment: Alignment.center,
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        child: ClipRect(
+                                          child: widget.blur && blurRadius > 0
+                                              ? ImageFiltered(
+                                                  imageFilter: ImageFilter.blur(sigmaX: blurRadius, sigmaY: blurRadius),
+                                                  child: Text(
+                                                    tag.text,
+                                                    style: textStyle,
+                                                    textAlign: TextAlign.center,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                )
+                                              : Text(
+                                                  tag.text,
+                                                  style: textStyle,
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                        ),
                                       ),
-                              ),
-                            ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              );
+            }
           ),
         );
       },

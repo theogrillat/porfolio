@@ -5,6 +5,7 @@ import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:portfolio/models/project.dart';
 import 'package:portfolio/services/db.dart';
 import 'package:portfolio/shared/styles.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:stacked/stacked.dart';
 
 enum NavigationState {
@@ -224,22 +225,30 @@ class HomeViewmodel extends BaseViewModel {
   void onInit({
     required double boxSize,
   }) async {
-    _boxSize = boxSize;
-    notifyListeners();
-    getProjects();
-    await Future.delayed(const Duration(seconds: 1));
-    showGridItems(showGridItemsCount);
-    // nextProject();
+    try {
+      _boxSize = boxSize;
+      notifyListeners();
+      getProjects();
+      _sensorSubscription = gyroscopeEventStream().listen(sensorHandler, onError: onSensorHandlerError);
+      await Future.delayed(const Duration(seconds: 1));
+      showGridItems(showGridItemsCount);
+    } catch (e) {
+      print('Error');
+      print(e);
+    }
   }
 
   void getProjects() async {
     _prjs = await DbService().getAllProjects();
-    print(_prjs);
+    print('---------------');
+    print("${_prjs.length} projects loaded");
+    print('---------------');
     notifyListeners();
   }
 
   void onDispose() {
     _cursorPositionController.close();
+    _sensorSubscription.cancel();
   }
 
   // PROJECTS
@@ -297,15 +306,30 @@ class HomeViewmodel extends BaseViewModel {
   final StreamController<Offset?> _cursorPositionController = StreamController<Offset?>.broadcast();
   Stream<Offset?> get cursorPositionStream => _cursorPositionController.stream;
 
+  late StreamSubscription _sensorSubscription;
+
   void enteredAppArea() => _cursorPositionController.add(null);
   void exitedAppArea() => _cursorPositionController.add(null);
   void updateCursorPosition(Offset? position) => _cursorPositionController.add(position);
   void clearCursorPosition() => updateCursorPosition(null);
 
+  void globalMouseRegionEventHandler(PointerEvent event) {
+    updateCursorPosition(event.position);
+  }
+
   // TILT
 
   final StreamController<TiltStreamModel> _tiltStreamController = StreamController<TiltStreamModel>.broadcast();
   StreamController<TiltStreamModel> get tiltStreamController => _tiltStreamController;
+
+  void sensorHandler(GyroscopeEvent event) {
+    print('sensorHandler');
+  }
+
+  void onSensorHandlerError(Object error) {
+    print('onSensorHandlerError');
+    print(error);
+  }
 
   // void updateTiltStream(TiltStreamModel tiltStream) => _tiltStreamController.add(tiltStream);
   // void clearTiltStream() => updateTiltStream(TiltStreamModel(position: Offset(0, 0)));

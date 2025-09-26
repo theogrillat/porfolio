@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:portfolio/models/about.dart';
 import 'package:portfolio/models/project.dart';
@@ -24,6 +26,7 @@ class DbService {
     try {
       CollectionReference ref = db.collection('projects');
       QuerySnapshot snapshot = await ref.get();
+      inspect(snapshot.docs);
       List<Project> projects = snapshot.docs.map((doc) => Project.fromMap(doc.data() as Map<String, dynamic>)).toList();
       return projects;
     } catch (e) {

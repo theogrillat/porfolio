@@ -7,6 +7,7 @@ import 'package:stacked/stacked.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 
 class SphereTag {
+  final int id;
   final String text;
   final vm.Vector3 position3D;
   Offset position2D;
@@ -16,6 +17,7 @@ class SphereTag {
   final double textHeight;
   final double tagSize;
   SphereTag({
+    required this.id,
     required this.text,
     required this.position3D,
     required this.position2D,
@@ -270,6 +272,7 @@ class CloudViewModel extends BaseViewModel {
           }
 
           _sphereTags.add(SphereTag(
+            id: i,
             text: _tags[i],
             position3D: position3D,
             position2D: position2D,
@@ -472,6 +475,21 @@ class CloudViewModel extends BaseViewModel {
         _startAnimationTimer();
       }
     });
+  }
+
+  void onResize(double width, double height) {
+    _width = width;
+    _height = height;
+
+    _sphereRadius = math.min(height, width) * 0.37;
+
+    // Distribute tags on sphere
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   if (_mounted) {
+    //     // Distribute new tags on sphere
+    //     _distributeTagsOnSphere();
+    //   }
+    // });
   }
 
   void updateTags(List<String> newTags) {

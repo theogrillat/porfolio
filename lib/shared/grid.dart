@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:portfolio/shared/coords.dart';
 import 'package:portfolio/shared/styles.dart';
+import 'package:portfolio/shared/utils.dart';
 
 class Coords {
   final int x;
@@ -22,11 +24,11 @@ class BoxPosition {
   int get top => start.y;
 
   Offset getCenterPosition({
-    required Size viewSize,
+    required BuildContext context,
     required double boxSize,
-    required double verticalPadding,
-    required double horizontalPadding,
   }) {
+    double verticalPadding = getTopPadding(context);
+    double horizontalPadding = getLeftPadding(context);
     double heightPx = height * boxSize;
     double widthPx = width * boxSize;
     double topFromViewportPx = boxSize * top + verticalPadding;
@@ -38,72 +40,63 @@ class BoxPosition {
   }
 
   bool contains({
-    required Offset positionToCheck,
+    required BuildContext context,
     required double boxSize,
-    required Size viewSize,
-    required double verticalPadding,
-    required double horizontalPadding,
+    required Offset positionToCheck,
   }) {
-    if (positionToCheck.dx <
-        getLeftOffsetFromViewport(viewSize: viewSize, boxSize: boxSize, verticalPadding: verticalPadding, horizontalPadding: horizontalPadding)) {
+    double leftOffset = getLeftOffsetFromViewport(context: context, boxSize: boxSize);
+    double rightOffset = getRightOffsetFromViewport(context: context, boxSize: boxSize);
+    double topOffset = getTopOffsetFromViewport(context: context, boxSize: boxSize);
+    double bottomOffset = getBottomOffsetFromViewport(context: context, boxSize: boxSize);
+
+    if (positionToCheck.dx < leftOffset) {
       return false;
     }
-    if (positionToCheck.dx >
-        getRightOffsetFromViewport(viewSize: viewSize, boxSize: boxSize, verticalPadding: verticalPadding, horizontalPadding: horizontalPadding)) {
+    if (positionToCheck.dx > rightOffset) {
       return false;
     }
-    if (positionToCheck.dy <
-        getTopOffsetFromViewport(viewSize: viewSize, boxSize: boxSize, verticalPadding: verticalPadding, horizontalPadding: horizontalPadding)) {
+    if (positionToCheck.dy < topOffset) {
       return false;
     }
-    if (positionToCheck.dy >
-        getBottomOffsetFromViewport(viewSize: viewSize, boxSize: boxSize, verticalPadding: verticalPadding, horizontalPadding: horizontalPadding)) {
+    if (positionToCheck.dy > bottomOffset) {
       return false;
     }
     return true;
   }
 
   double getLeftOffsetFromViewport({
-    required Size viewSize,
+    required BuildContext context,
     required double boxSize,
-    required double verticalPadding,
-    required double horizontalPadding,
   }) {
+    double horizontalPadding = getLeftPadding(context);
     double leftFromViewportPx = boxSize * left + horizontalPadding;
     return leftFromViewportPx;
   }
 
   double getTopOffsetFromViewport({
-    required Size viewSize,
+    required BuildContext context,
     required double boxSize,
-    required double verticalPadding,
-    required double horizontalPadding,
   }) {
+    double verticalPadding = getTopPadding(context);
     return boxSize * top + verticalPadding;
   }
 
   double getRightOffsetFromViewport({
-    required Size viewSize,
+    required BuildContext context,
     required double boxSize,
-    required double verticalPadding,
-    required double horizontalPadding,
   }) {
-    return getLeftOffsetFromViewport(
-          viewSize: viewSize,
-          boxSize: boxSize,
-          verticalPadding: verticalPadding,
-          horizontalPadding: horizontalPadding,
-        ) +
+    return getLeftOffsetFromViewport(context: context, boxSize: boxSize) +
         width * boxSize;
   }
 
   double getBottomOffsetFromViewport({
-    required Size viewSize,
+    required BuildContext context,
     required double boxSize,
-    required double verticalPadding,
-    required double horizontalPadding,
   }) {
-    return getTopOffsetFromViewport(viewSize: viewSize, boxSize: boxSize, verticalPadding: verticalPadding, horizontalPadding: horizontalPadding) +
+    return getTopOffsetFromViewport(
+          context: context,
+          boxSize: boxSize,
+        ) +
         height * boxSize;
   }
 
@@ -132,16 +125,13 @@ class Box {
 
   bool contains({
     required Offset positionToCheck,
-    required Size viewSize,
-    required double verticalPadding,
-    required double horizontalPadding,
+    required BuildContext context,
   }) {
     return position.contains(
         positionToCheck: positionToCheck,
         boxSize: boxSize,
-        viewSize: viewSize,
-        verticalPadding: verticalPadding,
-        horizontalPadding: horizontalPadding);
+        context: context,
+    );
   }
 }
 
@@ -152,33 +142,38 @@ class GridBox extends StatelessWidget {
     required this.transitionDuration,
     required this.transitionCurve,
     required this.boxSize,
-    required this.position,
+    // required this.position,
     required this.background,
     required this.foreground,
     required this.child,
+    required this.item,
   });
 
   final double boxSize;
-  final BoxPosition position;
+  // final BoxPosition position;
   final Color background;
   final Color foreground;
   final Function(Box) child;
   final bool show;
   final Duration transitionDuration;
   final Curve transitionCurve;
+  final BoxItem item;
+
   @override
   Widget build(BuildContext context) {
-    double verticalPadding = (MediaQuery.of(context).size.height - boxSize * Constants.yCount) / 2;
+    double verticalPadding = (MediaQuery.of(context).size.height -
+            boxSize * Constants.yCount(context)) /
+        2;
     return Positioned(
-      top: verticalPadding + position.top * boxSize,
-      left: position.left * boxSize,
+      top: verticalPadding + item.position.top * boxSize,
+      left: item.position.left * boxSize,
       child: AnimatedOpacity(
         opacity: show ? 1 : 0,
         duration: transitionDuration,
         curve: transitionCurve,
         child: SizedBox(
-          height: boxSize * position.height,
-          width: boxSize * position.width,
+          height: boxSize * item.position.height,
+          width: boxSize * item.position.width,
           child: AnimatedContainer(
             duration: transitionDuration,
             curve: transitionCurve,
@@ -190,7 +185,7 @@ class GridBox extends StatelessWidget {
               ),
             ),
             child: child(Box(
-              position: position,
+              position: item.position,
               background: background,
               foreground: foreground,
               boxSize: boxSize,

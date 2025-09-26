@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:portfolio/models/project.dart';
+import 'package:portfolio/shared/coords.dart';
+import 'package:portfolio/shared/extensions.dart';
 import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/shared/styles.dart';
+import 'package:portfolio/shared/utils.dart';
 import 'package:portfolio/views/home/home_viewmodel.dart';
 import 'package:portfolio/views/project/project_viewmodel.dart';
 import 'package:portfolio/widgets/animated_skew.dart';
 import 'package:portfolio/widgets/boxbutton.dart';
 import 'package:portfolio/widgets/cloud/cloud_view.dart';
 import 'package:portfolio/widgets/md_viewer.dart';
+import 'package:portfolio/widgets/pressure/pressure_view.dart';
 import 'package:portfolio/widgets/pressure_text.dart';
 import 'package:stacked/stacked.dart';
 
@@ -33,49 +37,46 @@ class ProjectView extends StatelessWidget {
         return Stack(
           children: [
             GridBox(
-              show: homeModel.currentGridIndex >= 1,
-              transitionDuration: homeModel.transitionDuration,
-              transitionCurve: homeModel.transitionCurve,
-              boxSize: boxSize,
-              position: BoxPosition(
-                start: Coords(2, 0),
-                end: Coords(3, 1),
-              ),
-              background: project.background,
-              foreground: project.foreground,
-              child: (box) => CloudView(
-                key: ValueKey('cloud_${project.title}_${project.techStack.join('_')}'),
-                tags: project.techStack,
-                height: boxSize * box.position.height,
-                width: boxSize * box.position.width,
-                mousePositionStream: homeModel.cursorPositionStream,
-                foregroundColor: project.foreground,
-                backgroundColor: project.background,
-                tagSize: 26,
-                blur: false,
-                topViewportOffset: box.position.getTopOffsetFromViewport(
-                  viewSize: MediaQuery.of(context).size,
-                  boxSize: boxSize,
-                  verticalPadding: 0,
-                  horizontalPadding: 0,
-                ),
-                leftViewportOffset: box.position.getLeftOffsetFromViewport(
-                  viewSize: MediaQuery.of(context).size,
-                  boxSize: boxSize,
-                  verticalPadding: 0,
-                  horizontalPadding: 0,
-                ),
-              ),
-            ),
+                show: homeModel.currentGridIndex >= 1,
+                transitionDuration: homeModel.transitionDuration,
+                transitionCurve: homeModel.transitionCurve,
+                boxSize: boxSize,
+                // position: BoxPosition(
+                //   start: Coords(2, 0),
+                //   end: Coords(3, 1),
+                // ),
+                item: ProjectItems(context).stack,
+                background: project.background,
+                foreground: project.foreground,
+                child: (box) {
+                  List<String> actuallTags = distributeEvenly(project.techStack, 35);
+                  actuallTags.shuffle();
+                  return CloudView(
+                    key: ValueKey('cloud_${project.title}_${project.techStack.join('_')}'),
+                    tags: actuallTags,
+                    height: boxSize * box.position.height,
+                    width: boxSize * box.position.width,
+                    mousePositionStream: homeModel.cursorPositionStream,
+                    foregroundColor: project.foreground,
+                    backgroundColor: project.background,
+                    tagSize: FontSize(context).regular,
+                    blur: false,
+                    topViewportOffset: box.position.getTopOffsetFromViewport(
+                      context: context,
+                      boxSize: boxSize,
+                    ),
+                    leftViewportOffset: box.position.getLeftOffsetFromViewport(
+                      context: context,
+                      boxSize: boxSize,
+                    ),
+                  );
+                }),
             GridBox(
               show: homeModel.currentGridIndex >= 2,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              position: BoxPosition(
-                start: Coords(3, 2),
-                end: Coords(5, 3),
-              ),
+              item: ProjectItems(context).description,
               background: project.background,
               foreground: project.foreground,
               child: (box) => MdViewer(
@@ -89,36 +90,37 @@ class ProjectView extends StatelessWidget {
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              position: BoxPosition(
-                start: Coords(4, 0),
-                end: Coords(6, 0),
-              ),
+              item: ProjectItems(context).title,
               background: project.background,
               foreground: project.foreground,
-              child: (box) => ClipRect(
-                child: TextPressure(
-                  text: project.title,
-                  minFontSize: boxSize * 1.3,
-                  textColor: project.foreground,
-                  strokeColor: project.background,
-                  fontFamily: 'Compressa VF',
-                  fontUrl: 'https://res.cloudinary.com/dr6lvwubh/raw/upload/v1529908256/CompressaPRO-GX.woff2',
-                  width: true,
-                  weight: true,
-                  italic: true,
-                  alpha: false,
-                  flex: true,
-                  scale: false,
-                  boxSize: Size(box.boxSize * box.position.width, box.boxSize),
-                  mousePositionStream: homeModel.cursorPositionStream,
-                ),
-              ),
+              child: (box) {
+                int n = project.title.length;
+                return ClipRRect(
+                  child: PressureView(
+                    key: ValueKey('pressure_${project.title}'),
+                    text: project.title.removeDiacritics().toUpperCase(),
+                    mousePositionStream: homeModel.cursorPositionStream,
+                    width: box.boxSize * box.position.width,
+                    height: box.boxSize * box.position.height,
+                    box: box,
+                    radius: boxSize * 1.5,
+                    minWidth: 10,
+                    maxWidth: 200 / n,
+                    maxWeight: 1000,
+                    strength: 1.5,
+                    leftViewportOffset: box.position.getLeftOffsetFromViewport(
+                      context: context,
+                      boxSize: boxSize,
+                    ),
+                  ),
+                );
+              },
             ),
             Builder(builder: (context) {
-              BoxPosition position = BoxPosition(
-                start: Coords(2, 3),
-                end: Coords(2, 3),
-              );
+              // BoxPosition position = BoxPosition(
+              //   start: Coords(2, 3),
+              //   end: Coords(2, 3),
+              // );
               return GridBox(
                 background: project.background,
                 foreground: project.foreground,
@@ -126,7 +128,8 @@ class ProjectView extends StatelessWidget {
                 transitionDuration: homeModel.transitionDuration,
                 transitionCurve: homeModel.transitionCurve,
                 boxSize: boxSize,
-                position: position,
+                // position: position,
+                item: ProjectItems(context).previousButton,
                 child: (box) => BoxButton(
                   box: box,
                   mousePositionStream: homeModel.cursorPositionStream,
@@ -140,7 +143,7 @@ class ProjectView extends StatelessWidget {
                       scale: 1.5,
                       child: Text(
                         'PRECEDENT',
-                        style: Typos().large(color: project.background),
+                        style: Typos(context).large(color: project.background),
                       ),
                     ),
                   ),
@@ -148,10 +151,10 @@ class ProjectView extends StatelessWidget {
               );
             }),
             Builder(builder: (context) {
-              BoxPosition position = BoxPosition(
-                start: Coords(6, 2),
-                end: Coords(6, 2),
-              );
+              // BoxPosition position = BoxPosition(
+              //   start: Coords(6, 2),
+              //   end: Coords(6, 2),
+              // );
               return GridBox(
                 background: project.background,
                 foreground: project.foreground,
@@ -159,7 +162,8 @@ class ProjectView extends StatelessWidget {
                 transitionDuration: homeModel.transitionDuration,
                 transitionCurve: homeModel.transitionCurve,
                 boxSize: boxSize,
-                position: position,
+                // position: position,
+                item: ProjectItems(context).nextButton,
                 child: (box) => BoxButton(
                   box: box,
                   mousePositionStream: homeModel.cursorPositionStream,
@@ -173,7 +177,7 @@ class ProjectView extends StatelessWidget {
                       scale: 1.7,
                       child: Text(
                         'SUIVANT',
-                        style: Typos().large(color: project.background),
+                        style: Typos(context).large(color: project.background),
                       ),
                     ),
                   ),
@@ -181,10 +185,10 @@ class ProjectView extends StatelessWidget {
               );
             }),
             Builder(builder: (context) {
-              BoxPosition position = BoxPosition(
-                start: Coords(4, 1),
-                end: Coords(4, 1),
-              );
+              // BoxPosition position = BoxPosition(
+              //   start: Coords(4, 1),
+              //   end: Coords(4, 1),
+              // );
               return GridBox(
                 background: project.background,
                 foreground: project.foreground,
@@ -192,7 +196,8 @@ class ProjectView extends StatelessWidget {
                 transitionDuration: homeModel.transitionDuration,
                 transitionCurve: homeModel.transitionCurve,
                 boxSize: boxSize,
-                position: position,
+                // position: position,
+                item: ProjectItems(context).homeButton,
                 child: (box) => BoxButton(
                   box: box,
                   mousePositionStream: homeModel.cursorPositionStream,
@@ -206,7 +211,7 @@ class ProjectView extends StatelessWidget {
                       scale: 1.7,
                       child: Text(
                         'ACCUEIL',
-                        style: Typos().large(color: project.background),
+                        style: Typos(context).large(color: project.background),
                       ),
                     ),
                   ),
@@ -221,7 +226,8 @@ class ProjectView extends StatelessWidget {
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              position: project.screenshots[0].position,
+              // item: project.screenshots[0].item,
+              item: ProjectItems(context).screenshot(0),
               child: (box) => ProjectScreenshot(
                 url: project.screenshots[0].url,
                 box: box,
@@ -236,7 +242,7 @@ class ProjectView extends StatelessWidget {
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              position: project.screenshots[1].position,
+              item: ProjectItems(context).screenshot(1),
               child: (box) => ProjectScreenshot(url: project.screenshots[1].url, box: box, onTap: model.openScreenshot),
             ),
             GridBox(
@@ -247,7 +253,7 @@ class ProjectView extends StatelessWidget {
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              position: project.screenshots[2].position,
+              item: ProjectItems(context).screenshot(2),
               child: (box) => ProjectScreenshot(url: project.screenshots[2].url, box: box, onTap: model.openScreenshot),
             ),
             GridBox(
@@ -258,7 +264,7 @@ class ProjectView extends StatelessWidget {
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              position: project.screenshots[3].position,
+              item: ProjectItems(context).screenshot(3),
               child: (box) => ProjectScreenshot(url: project.screenshots[3].url, box: box, onTap: model.openScreenshot),
             ),
           ],
@@ -306,11 +312,9 @@ class ProjectScreenshopImage extends StatelessWidget {
     return Hero(
       tag: url,
       child: Image.network(
-        key: ValueKey('img_0_${url}'),
+        key: ValueKey('img_0_$url'),
         url,
         fit: BoxFit.cover,
-        cacheWidth: (box.boxSize * box.position.width).toInt(),
-        cacheHeight: (box.boxSize * box.position.height).toInt(),
         errorBuilder: (context, error, stackTrace) {
           return Container(
             color: box.background,

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/shared/styles.dart';
+import 'package:portfolio/shared/utils.dart';
 
 class BoxButton extends StatefulWidget {
   const BoxButton({
@@ -39,16 +40,11 @@ class _BoxButtonState extends State<BoxButton> {
 
   StreamSubscription<Offset?>? _mousePositionSubscription;
 
-  double getTopPadding(BuildContext context) {
-    double maxHeight = MediaQuery.of(context).size.height;
-    return (maxHeight - (widget.box.boxSize * Constants.yCount)) / 2;
-  }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _verticalPadding = getTopPadding(context);
-    _horizontalPadding = Constants.mainPadding;
+    _horizontalPadding = getLeftPadding(context);
     _screenSize = MediaQuery.of(context).size;
   }
 
@@ -56,7 +52,8 @@ class _BoxButtonState extends State<BoxButton> {
     if (!mounted) return;
 
     // Check if we're currently in a build phase
-    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
       // We're in build phase, defer the setState
       SchedulerBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -73,24 +70,25 @@ class _BoxButtonState extends State<BoxButton> {
   void initState() {
     super.initState();
     _mousePositionSubscription = widget.mousePositionStream.listen((position) {
-      Offset centerPosition = widget.box.position.getCenterPosition(
-          viewSize: screenSize, boxSize: widget.box.boxSize, verticalPadding: verticalPadding, horizontalPadding: horizontalPadding);
-      if (position != null) {
-        if (widget.box.contains(
-          positionToCheck: position,
-          viewSize: screenSize,
-          verticalPadding: verticalPadding,
-          horizontalPadding: horizontalPadding,
-        )) {
-          _safeSetState(() {
-            _hovering = true;
-            widget.onHovering(true, centerPosition);
-          });
-        } else {
-          _safeSetState(() {
-            _hovering = false;
-            widget.onHovering(false, centerPosition);
-          });
+      if (mounted) {
+        Offset centerPosition = widget.box.position.getCenterPosition(
+          context: context,
+          boxSize: widget.box.boxSize,
+        );
+        if (position != null) {
+          bool contains =
+              widget.box.contains(positionToCheck: position, context: context);
+          if (contains) {
+            _safeSetState(() {
+              _hovering = true;
+              widget.onHovering(true, centerPosition);
+            });
+          } else {
+            _safeSetState(() {
+              _hovering = false;
+              widget.onHovering(false, centerPosition);
+            });
+          }
         }
       }
     });
