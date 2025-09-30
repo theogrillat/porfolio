@@ -8,6 +8,7 @@ import 'package:portfolio/widgets/boxbutton.dart';
 import 'package:portfolio/widgets/cloud/cloud_view.dart';
 import 'package:portfolio/widgets/hover.dart';
 import 'package:portfolio/widgets/pressure/pressure_view.dart';
+import 'package:portfolio/widgets/tags/tags_view.dart';
 import 'package:stacked/stacked.dart';
 import 'package:portfolio/views/home/home_viewmodel.dart';
 import 'skills_viewmodel.dart';
@@ -45,19 +46,15 @@ class SkillsView extends StatelessWidget {
                 box: box,
                 mousePositionStream: homeModel.cursorPositionStream,
                 onHovering: homeModel.onHovering,
-                onTap: model.selectedSkillCategory == null
-                    ? goBack
-                    : model.unselectSkills,
+                onTap: model.selectedSkillCategory == null ? goBack : model.unselectSkills,
                 invert: false,
                 child: (hovering) => Center(
                   child: AnimatedSkew(
                     skewed: hovering,
-                    translateX: 10,
+                    width: box.boxSize,
                     child: Text(
                       '<--',
-                      style: Typos(context)
-                          .large(color: Shades.mainColor)
-                          .copyWith(fontSize: boxSize * 0.2),
+                      style: Typos(context).large(color: Shades.mainColor).copyWith(fontSize: boxSize * 0.2),
                     ),
                   ),
                 ),
@@ -72,14 +69,7 @@ class SkillsView extends StatelessWidget {
               background: homeModel.backgroundColor,
               foreground: homeModel.foregroundColor,
               child: (box) {
-                Size viewSize = MediaQuery.of(context).size;
-                double verticalPadding = (viewSize.height -
-                        (box.boxSize * Constants.yCount(context))) /
-                    2;
-                double horizontalPadding = Constants.mainPadding(context);
-
-                String text =
-                    model.selectedSkillCategory?.name.toUpperCase() ?? 'SKILLS';
+                String text = model.selectedSkillCategory?.name.toUpperCase() ?? 'SKILLS';
 
                 return ClipRRect(
                   child: PressureView(
@@ -102,9 +92,7 @@ class SkillsView extends StatelessWidget {
               },
             ),
             GridBox(
-              show: homeModel.currentGridIndex >= 3 &&
-                  model.about != null &&
-                  model.showSkills,
+              show: homeModel.currentGridIndex >= 3 && model.about != null && model.showSkills,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -112,88 +100,22 @@ class SkillsView extends StatelessWidget {
               background: homeModel.backgroundColor,
               foreground: homeModel.foregroundColor,
               child: (box) {
-                Size viewSize = MediaQuery.of(context).size;
-                double verticalPadding = (viewSize.height -
-                        (box.boxSize * Constants.yCount(context))) /
-                    2;
-                double horizontalPadding = Constants.mainPadding(context);
-
-                List<String> actuallTags = distributeEvenly(model.tags, 45);
-                actuallTags.shuffle();
-
-                return CloudView(
-                  key: ValueKey(
-                      '${model.about?.avatar}_${model.tags.join('_')}'),
-                  tags: actuallTags,
-                  height: boxSize * box.position.height,
-                  width: boxSize * box.position.width,
-                  mousePositionStream: homeModel.cursorPositionStream,
-                  foregroundColor: box.foreground,
-                  backgroundColor: box.background,
-                  tagBuilder: (tag) {
-                    bool clickable = model.isClickable(tag);
-                    if (tag == '•') {
-                      return Center(
-                        child: Container(
-                          height: 2,
-                          width: 2,
-                          decoration: BoxDecoration(
-                            color: box.foreground.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      );
-                    }
-                    return GestureDetector(
-                      onTap: () => clickable ? model.onTagTap(tag) : null,
-                      child: Hover(
-                        showCursor: clickable,
-                        child: (h) {
-                          bool hovering = h && clickable;
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 0,
-                              vertical: 0,
-                            ),
-                            decoration: BoxDecoration(
-                              color: hovering
-                                  ? box.foreground
-                                  : Colors.transparent,
-                            ),
-                            child: Center(
-                              child: Text(
-                                tag,
-                                style: Typos(context)
-                                    .large(
-                                        color: hovering
-                                            ? box.background
-                                            : box.foreground)
-                                    .copyWith(
-                                      decoration: hovering
-                                          ? TextDecoration.none
-                                          : clickable
-                                              ? TextDecoration.underline
-                                              : TextDecoration.none,
-                                      decorationColor: box.foreground,
-                                      decorationThickness: 2,
-                                      decorationStyle:
-                                          TextDecorationStyle.dotted,
-                                    ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                // overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  invertDirection: true,
-                  topViewportOffset: box.position.getTopOffsetFromViewport(
-                      context: context, boxSize: boxSize),
-                  leftViewportOffset: box.position.getLeftOffsetFromViewport(
-                      context: context, boxSize: boxSize),
+                return AnimatedSwitcher(
+                  duration: homeModel.transitionDuration,
+                  switchInCurve: homeModel.transitionCurve,
+                  switchOutCurve: homeModel.transitionCurve,
+                  child: TagsView(
+                    key: ValueKey(model.tags.join('_')),
+                    background: box.background,
+                    foreground: box.foreground,
+                    cursorPositionStream: homeModel.cursorPositionStream,
+                    box: box,
+                    fillUpTo: 500,
+                    tags: model.tags,
+                    clickableTags: model.clickableTags,
+                    onTagClicked: (id, pos) => model.onTagTap(id, pos),
+                    initialCursorPosition: model.lastClickPosition,
+                  ),
                 );
               },
             ),

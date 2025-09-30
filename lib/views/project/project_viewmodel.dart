@@ -10,16 +10,10 @@ class ProjectViewModel extends BaseViewModel {
 
   void onInit(Project prj) {
     _project = prj;
-
-    // Clear image cache to ensure fresh images load
-    // PaintingBinding.instance.imageCache.clear();
-    // PaintingBinding.instance.imageCache.clearLiveImages();
-
     notifyListeners();
   }
 
-  void onDispose() {
-  }
+  void onDispose() {}
 
   void openScreenshot(BuildContext context, String url, Box box) {
     Navigator.push(

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:portfolio/shared/coords.dart';
@@ -5,6 +6,7 @@ import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/shared/styles.dart';
 import 'package:portfolio/shared/utils.dart';
 import 'package:portfolio/views/about/about_view.dart';
+import 'package:portfolio/views/contact/contact_view.dart';
 import 'package:portfolio/views/home/home_viewmodel.dart';
 import 'package:portfolio/views/project/project_view.dart';
 import 'package:portfolio/views/skills/skills_view.dart';
@@ -72,8 +74,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                         // onHover: (event) => model.updateCursorPosition(event.position),
                         onHover: model.globalMouseRegionEventHandler,
                         child: Tilt(
-                          fps: 60,
-                          // disable: true,
+                          fps: 120,
                           disable: model.pauseTilt,
                           tiltStreamController: model.tiltStreamController,
                           lightConfig: LightConfig(disable: true),
@@ -85,6 +86,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                             enableGestureHover: true,
                             filterQuality: FilterQuality.medium,
                             moveDuration: const Duration(milliseconds: 0),
+                            angle: Breakpoints(context).isMobile() ? 15 : 10,
                           ),
                           child: AnimatedContainer(
                             duration: model.transitionDuration,
@@ -133,6 +135,12 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                                                 boxSize: boxSize,
                                                 homeModel: model,
                                                 goBack: model.goToAbout,
+                                              ),
+                                            if (model.navigationState == NavigationState.contact)
+                                              ContactView(
+                                                boxSize: boxSize,
+                                                goHome: model.goToHome,
+                                                homeModel: model,
                                               ),
                                           ],
                                         ),
@@ -208,62 +216,76 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                       );
                     },
                   ),
-                  Builder(
-                    builder: (context) {
-                      String type = 'Unknown';
-                      bool isWide = Breakpoints().isWide(context);
-                      bool isDesktop = Breakpoints().isDesktop(context);
-                      bool isTablet = Breakpoints().isTablet(context);
-                      bool isMobile = Breakpoints().isMobile(context);
-
-                      if (isWide) type = 'Wide';
-                      if (isDesktop) type = 'Desktop';
-                      if (isTablet) type = 'Tablet';
-                      if (isMobile) type = 'Mobile';
-
-                      return Container(
-                        color: model.foregroundColor,
-                        padding: EdgeInsets.all(10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(type.toUpperCase(), style: Typos(context).large(color: model.backgroundColor)),
-                            Text(
-                              'Width: ${MediaQuery.of(context).size.width.toString()}',
-                              style: Typos(context).regular(color: model.backgroundColor),
-                            ),
-                            Text(
-                              'Height: ${MediaQuery.of(context).size.height.toString()}',
-                              style: Typos(context).regular(color: model.backgroundColor),
-                            ),
-                            Text(''),
-                            Text(
-                              'Wide',
-                              style: Typos(context).regular(color: model.backgroundColor.withValues(alpha: isWide ? 1 : 0.4)),
-                            ),
-                            Text(
-                              'Desktop',
-                              style: Typos(context).regular(color: model.backgroundColor.withValues(alpha: isDesktop ? 1 : 0.4)),
-                            ),
-                            Text(
-                              'Tablet',
-                              style: Typos(context).regular(color: model.backgroundColor.withValues(alpha: isTablet ? 1 : 0.4)),
-                            ),
-                            Text(
-                              'Mobile',
-                              style: Typos(context).regular(color: model.backgroundColor.withValues(alpha: isMobile ? 1 : 0.4)),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                  // UiDebug(model: model),
                 ],
               ),
             ),
           );
         });
+  }
+}
+
+class UiDebug extends StatelessWidget {
+  final HomeViewmodel model;
+
+  const UiDebug({
+    super.key,
+    required this.model,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Builder(
+      builder: (context) {
+        String type = 'Unknown';
+        bool isWide = Breakpoints(context).isWide();
+        bool isDesktop = Breakpoints(context).isDesktop();
+        bool isTablet = Breakpoints(context).isTablet();
+        bool isMobile = Breakpoints(context).isMobile();
+
+        if (isWide) type = 'Wide';
+        if (isDesktop) type = 'Desktop';
+        if (isTablet) type = 'Tablet';
+        if (isMobile) type = 'Mobile';
+
+        return Container(
+          color: model.foregroundColor,
+          padding: EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(type.toUpperCase(), style: Typos(context).large(color: model.backgroundColor)),
+              Text(
+                'Width: ${MediaQuery.of(context).size.width.toString()}',
+                style: Typos(context).regular(color: model.backgroundColor),
+              ),
+              Text(
+                'Height: ${MediaQuery.of(context).size.height.toString()}',
+                style: Typos(context).regular(color: model.backgroundColor),
+              ),
+              Text(''),
+              Text(
+                'Wide',
+                style: Typos(context).regular(color: model.backgroundColor.withValues(alpha: isWide ? 1 : 0.4)),
+              ),
+              Text(
+                'Desktop',
+                style: Typos(context).regular(color: model.backgroundColor.withValues(alpha: isDesktop ? 1 : 0.4)),
+              ),
+              Text(
+                'Tablet',
+                style: Typos(context).regular(color: model.backgroundColor.withValues(alpha: isTablet ? 1 : 0.4)),
+              ),
+              Text(
+                'Mobile',
+                style: Typos(context).regular(color: model.backgroundColor.withValues(alpha: isMobile ? 1 : 0.4)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -321,10 +343,11 @@ class LandingView extends StatelessWidget {
             child: (hovering) => Center(
               child: AnimatedSkew(
                 skewed: hovering,
-                translateX: 15,
+                width: box.boxSize,
                 child: Text(
                   'PROJETS',
                   style: Typos(context).large(color: Shades.mainColor),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -414,7 +437,7 @@ class LandingView extends StatelessWidget {
             child: (hovering) => Center(
               child: AnimatedSkew(
                 skewed: hovering,
-                translateX: 35,
+                width: box.boxSize,
                 child: Text(
                   'QUI SUIS-JE ?',
                   style: Typos(context).large(color: model.backgroundColor),
@@ -451,13 +474,14 @@ class LandingView extends StatelessWidget {
           item: LandingItems(context).contactButton,
           child: (box) => BoxButton(
             box: box,
+            onTap: model.goToContact,
             mousePositionStream: model.cursorPositionStream,
             onHovering: model.onHovering,
             invert: true,
             child: (hovering) => Center(
               child: AnimatedSkew(
                 skewed: hovering,
-                translateX: FontSize(context).large * 0.6,
+                width: box.boxSize,
                 child: Text(
                   'CONTACT',
                   style: Typos(context).large(color: model.backgroundColor),

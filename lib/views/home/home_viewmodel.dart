@@ -5,8 +5,13 @@ import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:portfolio/models/project.dart';
 import 'package:portfolio/services/db.dart';
 import 'package:portfolio/shared/styles.dart';
+import 'package:portfolio/shared/utils.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:stacked/stacked.dart';
+
+// ============================================================================
+// ENUMS & CONSTANTS
+// ============================================================================
 
 enum NavigationState {
   home,
@@ -20,9 +25,17 @@ const landingBoxCount = 8;
 const projectBoxCount = 10;
 const aboutBoxCount = 8;
 const skillsBoxCount = 8;
+const contactBoxCount = 1;
+
+// ============================================================================
+// MAIN VIEWMODEL CLASS
+// ============================================================================
 
 class HomeViewmodel extends BaseViewModel {
-  // NAVIGATION
+  // ============================================================================
+  // NAVIGATION STATE
+  // ============================================================================
+
   NavigationState _navigationState = NavigationState.home;
   NavigationState get navigationState => _navigationState;
 
@@ -40,8 +53,18 @@ class HomeViewmodel extends BaseViewModel {
     if (_navigationState == NavigationState.project) return projectBoxCount;
     if (_navigationState == NavigationState.about) return aboutBoxCount;
     if (_navigationState == NavigationState.skills) return skillsBoxCount;
+    if (_navigationState == NavigationState.contact) return contactBoxCount;
     return 0;
   }
+
+  void setNavigationState(NavigationState state) {
+    _navigationState = state;
+    notifyListeners();
+  }
+
+  // ============================================================================
+  // NAVIGATION METHODS
+  // ============================================================================
 
   Future<void> goToHome() async {
     await performTransition(() {
@@ -75,29 +98,32 @@ class HomeViewmodel extends BaseViewModel {
     });
   }
 
+  Future<void> goToContact() async {
+    await performTransition(() {
+      _navigationState = NavigationState.contact;
+      notifyListeners();
+    });
+  }
+
+  // ============================================================================
+  // TRANSITION SYSTEM
+  // ============================================================================
+
+  final Duration _transitionDuration = const Duration(milliseconds: 600);
+  Duration get transitionDuration => _transitionDuration;
+
+  final Duration _itemTransitionDuration = const Duration(milliseconds: 100);
+  Duration get itemTransitionDuration => _itemTransitionDuration;
+
+  final Curve _transitionCurve = Curves.easeInOut;
+  Curve get transitionCurve => _transitionCurve;
+
   Future<void> performTransition(Function callback) async {
     await hideGridItems();
     callback();
     await Future.delayed(_transitionDuration);
     showGridItems(showGridItemsCount);
   }
-
-  void setNavigationState(NavigationState state) {
-    _navigationState = state;
-    notifyListeners();
-  }
-
-  // TRANSITIONS
-
-  final Duration _transitionDuration = const Duration(milliseconds: 600);
-  Duration get transitionDuration => _transitionDuration;
-
-  // final Duration _itemTransitionDuration = const Duration(milliseconds: 1000);
-  final Duration _itemTransitionDuration = const Duration(milliseconds: 100);
-  Duration get itemTransitionDuration => _itemTransitionDuration;
-
-  final Curve _transitionCurve = Curves.easeInOut;
-  Curve get transitionCurve => _transitionCurve;
 
   /// Calculates durations for grid items using a curve where each item gets
   /// an increasingly greater duration while maintaining the same total duration.
@@ -133,8 +159,9 @@ class HomeViewmodel extends BaseViewModel {
     return durations;
   }
 
-  // bool _showGridItems = false;
-  // bool get showGridItems => _showGridItems;
+  // ============================================================================
+  // GRID ANIMATION STATE
+  // ============================================================================
 
   int _currentGridIndex = 0;
   int get currentGridIndex => _currentGridIndex;
@@ -166,12 +193,9 @@ class HomeViewmodel extends BaseViewModel {
     print('End --------- hideGridItems --------------------------------');
   }
 
-  // Future<void> setShowGridItems(bool value) async {
-  //   // _showGridItems = value;
-  //   notifyListeners();
-  //   await Future.delayed(_transitionDuration);
-  //   notifyListeners();
-  // }
+  // ============================================================================
+  // UI STATE MANAGEMENT
+  // ============================================================================
 
   late double _boxSize;
   double get boxSize => _boxSize;
@@ -222,6 +246,110 @@ class HomeViewmodel extends BaseViewModel {
     notifyListeners();
   }
 
+  // ============================================================================
+  // PROJECT MANAGEMENT
+  // ============================================================================
+
+  int? _currentPrjIndex = -1;
+  int? get currentPrjIndex => _currentPrjIndex;
+
+  Project? _currentProject;
+  Project? get currentProject => _currentProject;
+
+  bool get isLastProject => _prjs.isEmpty || _currentPrjIndex == _prjs.length - 1;
+  bool get isFirstProject => _prjs.isEmpty || _currentPrjIndex == 0;
+
+  List<Project> _prjs = [];
+  List<Project> get prjs => _prjs;
+
+  void getProjects() async {
+    _prjs = await DbService().getAllProjects();
+    print('---------------');
+    print("${_prjs.length} projects loaded");
+    print('---------------');
+    notifyListeners();
+  }
+
+  Future<void> nextProject() async {
+    if (_prjs.isEmpty) return;
+    if (_currentPrjIndex == _prjs.length - 1) return;
+
+    await hideGridItems();
+
+    _currentPrjIndex = _currentPrjIndex != null ? _currentPrjIndex! + 1 : 0;
+    _currentProject = _prjs[_currentPrjIndex!];
+    notifyListeners();
+
+    await Future.delayed(_transitionDuration);
+
+    showGridItems(showGridItemsCount);
+  }
+
+  Future<void> previousProject() async {
+    if (_prjs.isEmpty) return;
+    if (_currentPrjIndex == 0) return;
+
+    await hideGridItems();
+
+    _currentPrjIndex = _currentPrjIndex != null ? _currentPrjIndex! - 1 : 0;
+    _currentProject = _prjs[_currentPrjIndex!];
+    notifyListeners();
+
+    await Future.delayed(_transitionDuration);
+
+    showGridItems(showGridItemsCount);
+  }
+
+  // ============================================================================
+  // MOUSE CURSOR TRACKING
+  // ============================================================================
+
+  final StreamController<Offset?> _cursorPositionController = StreamController<Offset?>.broadcast();
+  Stream<Offset?> get cursorPositionStream => _cursorPositionController.stream;
+
+  void enteredAppArea() {
+    _cursorPositionController.add(null);
+  }
+
+  void exitedAppArea() {
+    _cursorPositionController.add(null);
+  }
+
+  void updateCursorPosition(Offset? position) {
+    _cursorPositionController.add(position);
+  }
+
+  void clearCursorPosition() => updateCursorPosition(null);
+
+  void globalMouseRegionEventHandler(PointerEvent event) {
+    updateCursorPosition(event.position);
+  }
+
+  // ============================================================================
+  // TILT & SENSOR HANDLING
+  // ============================================================================
+
+  final StreamController<TiltStreamModel> _tiltStreamController = StreamController<TiltStreamModel>.broadcast();
+  StreamController<TiltStreamModel> get tiltStreamController => _tiltStreamController;
+
+  late StreamSubscription _sensorSubscription;
+
+  bool _pauseTilt = false;
+  bool get pauseTilt => _pauseTilt;
+
+  void sensorHandler(GyroscopeEvent event) {
+    print('sensorHandler');
+  }
+
+  void onSensorHandlerError(Object error) {
+    print('onSensorHandlerError');
+    print(error);
+  }
+
+  // ============================================================================
+  // LIFECYCLE MANAGEMENT
+  // ============================================================================
+
   void onInit({
     required double boxSize,
   }) async {
@@ -238,109 +366,8 @@ class HomeViewmodel extends BaseViewModel {
     }
   }
 
-  void getProjects() async {
-    _prjs = await DbService().getAllProjects();
-    print('---------------');
-    print("${_prjs.length} projects loaded");
-    print('---------------');
-    notifyListeners();
-  }
-
   void onDispose() {
     _cursorPositionController.close();
     _sensorSubscription.cancel();
   }
-
-  // PROJECTS
-
-  int? _currentPrjIndex = -1;
-  int? get currentPrjIndex => _currentPrjIndex;
-
-  Project? _currentProject;
-  Project? get currentProject => _currentProject;
-
-  List<Project> _prjs = [];
-  List<Project> get prjs => _prjs;
-
-  Future<void> nextProject() async {
-    if (_prjs.isEmpty) return;
-
-    bool wasLastProject = _currentPrjIndex == _prjs.length - 1;
-
-    await hideGridItems();
-    if (_currentProject == null) {
-      // From home view
-      _currentPrjIndex = 0;
-    } else {
-      // From project view
-      _currentPrjIndex = wasLastProject ? 0 : _currentPrjIndex! + 1;
-    }
-    if (_currentPrjIndex != null) {
-      // From home view
-      _currentProject = _prjs[_currentPrjIndex!];
-    } else {
-      // From project view
-      _currentProject = null;
-    }
-    notifyListeners();
-    await Future.delayed(_transitionDuration);
-    showGridItems(showGridItemsCount);
-  }
-
-  void previousProject() {
-    if (_currentProject == null) {
-      _currentPrjIndex = 0;
-    } else {
-      _currentPrjIndex = _currentPrjIndex! - 1;
-    }
-    if (_currentPrjIndex != null) {
-      _currentProject = _prjs[_currentPrjIndex!];
-    } else {
-      _currentProject = null;
-    }
-    notifyListeners();
-  }
-
-  // MOUSE POSITION
-
-  final StreamController<Offset?> _cursorPositionController = StreamController<Offset?>.broadcast();
-  Stream<Offset?> get cursorPositionStream => _cursorPositionController.stream;
-
-  late StreamSubscription _sensorSubscription;
-
-  void enteredAppArea() => _cursorPositionController.add(null);
-  void exitedAppArea() => _cursorPositionController.add(null);
-  void updateCursorPosition(Offset? position) => _cursorPositionController.add(position);
-  void clearCursorPosition() => updateCursorPosition(null);
-
-  void globalMouseRegionEventHandler(PointerEvent event) {
-    updateCursorPosition(event.position);
-  }
-
-  // TILT
-
-  final StreamController<TiltStreamModel> _tiltStreamController = StreamController<TiltStreamModel>.broadcast();
-  StreamController<TiltStreamModel> get tiltStreamController => _tiltStreamController;
-
-  void sensorHandler(GyroscopeEvent event) {
-    print('sensorHandler');
-  }
-
-  void onSensorHandlerError(Object error) {
-    print('onSensorHandlerError');
-    print(error);
-  }
-
-  // void updateTiltStream(TiltStreamModel tiltStream) => _tiltStreamController.add(tiltStream);
-  // void clearTiltStream() => updateTiltStream(TiltStreamModel(position: Offset(0, 0)));
-
-  // void centerTilt() => updateTiltStream(TiltStreamModel(position: Offset(0, 0)));
-
-  bool _pauseTilt = false;
-  bool get pauseTilt => _pauseTilt;
-
-  // void setPauseTilt(bool value) {
-  //   _pauseTilt = value;
-  //   notifyListeners();
-  // }
 }

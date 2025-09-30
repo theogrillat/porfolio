@@ -1,7 +1,20 @@
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
+import 'package:logger/web.dart';
 import 'package:portfolio/shared/styles.dart';
+import 'dart:ui_web' as ui_web;
+
+var logger = Logger(
+  printer: PrettyPrinter(
+    methodCount: 3, // Increase the number of method calls shown (default is 2)
+    errorMethodCount: 3, // Increase the number of method calls shown for errors (default is 8)
+    lineLength: 120, // Optionally make each line longer for better readability
+    colors: false, // Colorize the output
+    printEmojis: true, // Include emojis in the log output
+    dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart, // Include a timestamp in the log output
+  ),
+);
 
 double interpolate({
   required num value,
@@ -100,6 +113,8 @@ double getLeftPadding(BuildContext context) {
 }
 
 class Breakpoints {
+  BuildContext context;
+  Breakpoints(this.context);
   //
   //
   // Mobile
@@ -124,29 +139,51 @@ class Breakpoints {
   //
   //
 
-  double minSize(BuildContext context) {
+  double minSize() {
     double w = MediaQuery.of(context).size.width;
     double h = MediaQuery.of(context).size.height;
     return min(w, h);
   }
 
-  bool isMobile(BuildContext context) {
-    double size = minSize(context);
+  bool isMobile() {
+    double size = minSize();
     return size <= tablet;
   }
 
-  bool isTablet(BuildContext context) {
-    double size = minSize(context);
+  bool isTablet() {
+    double size = minSize();
     return size >= tablet && size < desktop;
   }
 
-  bool isDesktop(BuildContext context) {
-    double size = minSize(context);
+  bool isDesktop() {
+    double size = minSize();
     return size >= desktop && size < wide;
   }
 
-  bool isWide(BuildContext context) {
-    double size = minSize(context);
+  bool isWide() {
+    double size = minSize();
     return size >= wide;
   }
+}
+
+bool listEquals<T>(List<T>? a, List<T>? b) {
+  if (a == null) {
+    bool bIsNull = b == null;
+    return bIsNull;
+  }
+  if (b == null || a.length != b.length) {
+    return false;
+  }
+  for (int index = 0; index < a.length; index += 1) {
+    if (a[index] != b[index]) return false;
+  }
+  return true;
+}
+
+bool get isMobileWebBrowser {
+  return ui_web.BrowserDetection.instance.isMobile;
+}
+
+bool get isDesktopWebBrowser {
+  return ui_web.BrowserDetection.instance.isDesktop;
 }

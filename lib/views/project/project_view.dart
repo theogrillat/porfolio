@@ -4,15 +4,13 @@ import 'package:portfolio/shared/coords.dart';
 import 'package:portfolio/shared/extensions.dart';
 import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/shared/styles.dart';
-import 'package:portfolio/shared/utils.dart';
 import 'package:portfolio/views/home/home_viewmodel.dart';
 import 'package:portfolio/views/project/project_viewmodel.dart';
 import 'package:portfolio/widgets/animated_skew.dart';
 import 'package:portfolio/widgets/boxbutton.dart';
-import 'package:portfolio/widgets/cloud/cloud_view.dart';
 import 'package:portfolio/widgets/md_viewer.dart';
 import 'package:portfolio/widgets/pressure/pressure_view.dart';
-import 'package:portfolio/widgets/pressure_text.dart';
+import 'package:portfolio/widgets/tags/tags_view.dart';
 import 'package:stacked/stacked.dart';
 
 class ProjectView extends StatelessWidget {
@@ -41,34 +39,18 @@ class ProjectView extends StatelessWidget {
                 transitionDuration: homeModel.transitionDuration,
                 transitionCurve: homeModel.transitionCurve,
                 boxSize: boxSize,
-                // position: BoxPosition(
-                //   start: Coords(2, 0),
-                //   end: Coords(3, 1),
-                // ),
                 item: ProjectItems(context).stack,
                 background: project.background,
                 foreground: project.foreground,
                 child: (box) {
-                  List<String> actuallTags = distributeEvenly(project.techStack, 35);
-                  actuallTags.shuffle();
-                  return CloudView(
+                  // print('tags: t.techStack: ${project.techStack}');
+                  return TagsView(
                     key: ValueKey('cloud_${project.title}_${project.techStack.join('_')}'),
-                    tags: actuallTags,
-                    height: boxSize * box.position.height,
-                    width: boxSize * box.position.width,
-                    mousePositionStream: homeModel.cursorPositionStream,
-                    foregroundColor: project.foreground,
-                    backgroundColor: project.background,
-                    tagSize: FontSize(context).regular,
-                    blur: false,
-                    topViewportOffset: box.position.getTopOffsetFromViewport(
-                      context: context,
-                      boxSize: boxSize,
-                    ),
-                    leftViewportOffset: box.position.getLeftOffsetFromViewport(
-                      context: context,
-                      boxSize: boxSize,
-                    ),
+                    tags: project.techStack,
+                    box: box,
+                    cursorPositionStream: homeModel.cursorPositionStream,
+                    foreground: project.foreground,
+                    background: project.background,
                   );
                 }),
             GridBox(
@@ -116,108 +98,88 @@ class ProjectView extends StatelessWidget {
                 );
               },
             ),
-            Builder(builder: (context) {
-              // BoxPosition position = BoxPosition(
-              //   start: Coords(2, 3),
-              //   end: Coords(2, 3),
-              // );
-              return GridBox(
-                background: project.background,
-                foreground: project.foreground,
-                show: homeModel.currentGridIndex >= 4,
-                transitionDuration: homeModel.transitionDuration,
-                transitionCurve: homeModel.transitionCurve,
-                boxSize: boxSize,
-                // position: position,
-                item: ProjectItems(context).previousButton,
-                child: (box) => BoxButton(
-                  box: box,
-                  mousePositionStream: homeModel.cursorPositionStream,
-                  onHovering: homeModel.onHovering,
-                  onTap: () => homeModel.previousProject(),
-                  invert: false,
-                  child: (hovering) => Center(
-                    child: AnimatedSkew(
-                      skewed: hovering,
-                      translateX: 30,
-                      scale: 1.5,
-                      child: Text(
-                        'PRECEDENT',
-                        style: Typos(context).large(color: project.background),
-                      ),
+            GridBox(
+              background: project.background,
+              foreground: project.foreground,
+              show: homeModel.currentGridIndex >= 4 && !homeModel.isFirstProject,
+              transitionDuration: homeModel.transitionDuration,
+              transitionCurve: homeModel.transitionCurve,
+              boxSize: boxSize,
+              // position: position,
+              item: ProjectItems(context).previousButton,
+              child: (box) => BoxButton(
+                box: box,
+                mousePositionStream: homeModel.cursorPositionStream,
+                onHovering: homeModel.onHovering,
+                onTap: () => homeModel.previousProject(),
+                invert: false,
+                child: (hovering) => Center(
+                  child: AnimatedSkew(
+                    skewed: hovering,
+                    width: box.boxSize,
+                    scale: 1.5,
+                    child: Text(
+                      'PRECEDENT',
+                      style: Typos(context).large(color: project.background),
                     ),
                   ),
                 ),
-              );
-            }),
-            Builder(builder: (context) {
-              // BoxPosition position = BoxPosition(
-              //   start: Coords(6, 2),
-              //   end: Coords(6, 2),
-              // );
-              return GridBox(
-                background: project.background,
-                foreground: project.foreground,
-                show: homeModel.currentGridIndex >= 5,
-                transitionDuration: homeModel.transitionDuration,
-                transitionCurve: homeModel.transitionCurve,
-                boxSize: boxSize,
-                // position: position,
-                item: ProjectItems(context).nextButton,
-                child: (box) => BoxButton(
-                  box: box,
-                  mousePositionStream: homeModel.cursorPositionStream,
-                  onHovering: homeModel.onHovering,
-                  onTap: () => homeModel.nextProject(),
-                  invert: false,
-                  child: (hovering) => Center(
-                    child: AnimatedSkew(
-                      skewed: hovering,
-                      translateX: 20,
-                      scale: 1.7,
-                      child: Text(
-                        'SUIVANT',
-                        style: Typos(context).large(color: project.background),
-                      ),
+              ),
+            ),
+            GridBox(
+              background: project.background,
+              foreground: project.foreground,
+              show: homeModel.currentGridIndex >= 5 && !homeModel.isLastProject,
+              transitionDuration: homeModel.transitionDuration,
+              transitionCurve: homeModel.transitionCurve,
+              boxSize: boxSize,
+              // position: position,
+              item: ProjectItems(context).nextButton,
+              child: (box) => BoxButton(
+                box: box,
+                mousePositionStream: homeModel.cursorPositionStream,
+                onHovering: homeModel.onHovering,
+                onTap: () => homeModel.nextProject(),
+                invert: false,
+                child: (hovering) => Center(
+                  child: AnimatedSkew(
+                    skewed: hovering,
+                    width: box.boxSize,
+                    scale: 1.7,
+                    child: Text(
+                      'SUIVANT',
+                      style: Typos(context).large(color: project.background),
                     ),
                   ),
                 ),
-              );
-            }),
-            Builder(builder: (context) {
-              // BoxPosition position = BoxPosition(
-              //   start: Coords(4, 1),
-              //   end: Coords(4, 1),
-              // );
-              return GridBox(
-                background: project.background,
-                foreground: project.foreground,
-                show: homeModel.currentGridIndex >= 6,
-                transitionDuration: homeModel.transitionDuration,
-                transitionCurve: homeModel.transitionCurve,
-                boxSize: boxSize,
-                // position: position,
-                item: ProjectItems(context).homeButton,
-                child: (box) => BoxButton(
-                  box: box,
-                  mousePositionStream: homeModel.cursorPositionStream,
-                  onHovering: homeModel.onHovering,
-                  onTap: () => homeModel.goToHome(),
-                  invert: true,
-                  child: (hovering) => Center(
-                    child: AnimatedSkew(
-                      skewed: hovering,
-                      translateX: 20,
-                      scale: 1.7,
-                      child: Text(
-                        'ACCUEIL',
-                        style: Typos(context).large(color: project.background),
-                      ),
+              ),
+            ),
+            GridBox(
+              background: project.background,
+              foreground: project.foreground,
+              show: homeModel.currentGridIndex >= 6,
+              transitionDuration: homeModel.transitionDuration,
+              transitionCurve: homeModel.transitionCurve,
+              boxSize: boxSize,
+              item: ProjectItems(context).homeButton,
+              child: (box) => BoxButton(
+                box: box,
+                mousePositionStream: homeModel.cursorPositionStream,
+                onHovering: homeModel.onHovering,
+                onTap: () => homeModel.goToHome(),
+                invert: true,
+                child: (hovering) => Center(
+                  child: AnimatedSkew(
+                    skewed: hovering,
+                    width: box.boxSize,
+                    child: Text(
+                      'ACCUEIL',
+                      style: Typos(context).large(color: project.background),
                     ),
                   ),
                 ),
-              );
-            }),
+              ),
+            ),
             GridBox(
               background: project.background,
               foreground: project.foreground,
@@ -226,7 +188,6 @@ class ProjectView extends StatelessWidget {
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              // item: project.screenshots[0].item,
               item: ProjectItems(context).screenshot(0),
               child: (box) => ProjectScreenshot(
                 url: project.screenshots[0].url,

@@ -22,11 +22,21 @@ class Project {
       : title = data['title'] ?? '',
         description = data['description'] ?? '',
         techStack = (data['techStack'] ?? []).cast<String>(),
-        screenshots = ((data['screenshots'] ?? []) as List<dynamic>)
-            .map((e) => Screenshot.fromMap(e as Map<String, dynamic>))
-            .toList(),
+        screenshots = ((data['screenshots'] ?? []) as List<dynamic>).map((e) => Screenshot.fromMap(e as Map<String, dynamic>)).toList(),
         background = hex(data['background']),
         foreground = hex(data['foreground']);
+
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'description': description,
+      'techStack': techStack,
+      'screenshots': screenshots.map((e) => e.toMap()).toList(),
+      'background': background.value.toRadixString(16),
+      'foreground': foreground.value.toRadixString(16),
+    };
+  }
 }
 
 class Screenshot {
@@ -41,4 +51,11 @@ class Screenshot {
   Screenshot.fromMap(Map<String, dynamic> data)
       : url = data['url'] ?? '',
         portrait = data['portrait'] ?? true;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'url': url,
+      'portrait': portrait,
+    };
+  }
 }

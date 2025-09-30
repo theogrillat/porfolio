@@ -50,6 +50,8 @@ dependencies:
   diacritic: ^0.1.6
   sensors_plus: ^7.0.0
 
+  http: any
+  logger: ^2.6.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -324,3 +324,17 @@ class SkillsItems extends Items {
     return buildItem(3, desktopStart, desktopEnd, mobileStart, mobileEnd);
   }
 }
+
+class ContactItems extends Items {
+  ContactItems(super.context);
+
+  BoxItem get sphere {
+    Coords desktopStart = Coords(2, 0);
+    Coords desktopEnd = Coords(4, 2);
+
+    Coords mobileStart = Coords(0, 0);
+    Coords mobileEnd = Coords(1, 1);
+
+    return buildItem(1, desktopStart, desktopEnd, mobileStart, mobileEnd);
+  }
+}

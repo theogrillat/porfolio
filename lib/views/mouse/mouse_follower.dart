@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 
 class MouseFollower extends StatefulWidget {
   const MouseFollower({

@@ -55,3 +55,6 @@ macos/flavors/*/GoogleService-Info.plist
 
 # Firebase configuration
 firebase.json
+
+.firebase/
+certs

@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:portfolio/views/mouse/mouse_follower.dart';
 import 'package:portfolio/views/mouse/mouse_viewmodel.dart';

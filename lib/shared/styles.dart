@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:portfolio/shared/utils.dart';
 
@@ -21,19 +19,19 @@ class Constants {
   static double edgeWidth = 4;
   static double mainPadding(BuildContext context) {
     double val = 10;
-    if (Breakpoints().isWide(context)) val = 80;
-    if (Breakpoints().isDesktop(context)) val = 50;
-    if (Breakpoints().isTablet(context)) val = 30;
-    if (Breakpoints().isMobile(context)) val = 10;
+    if (Breakpoints(context).isWide()) val = 80;
+    if (Breakpoints(context).isDesktop()) val = 50;
+    if (Breakpoints(context).isTablet()) val = 30;
+    if (Breakpoints(context).isMobile()) val = 10;
     return val;
   }
 
   static double sidebarWidth(BuildContext context) {
     if (isPortrait(context)) return 0;
-    if (Breakpoints().isWide(context)) return 80;
-    if (Breakpoints().isDesktop(context)) return 50;
-    if (Breakpoints().isTablet(context)) return 20;
-    if (Breakpoints().isMobile(context)) return 20;
+    if (Breakpoints(context).isWide()) return 80;
+    if (Breakpoints(context).isDesktop()) return 50;
+    if (Breakpoints(context).isTablet()) return 20;
+    if (Breakpoints(context).isMobile()) return 20;
     return 20;
   }
 
@@ -66,11 +64,10 @@ class Shades {
 class FontSize {
   BuildContext context;
   double get baseSize {
-
-    bool isWide = Breakpoints().isWide(context);
-    bool isDesktop = Breakpoints().isDesktop(context);
-    bool isTablet = Breakpoints().isTablet(context);
-    bool isMobile = Breakpoints().isMobile(context);
+    bool isWide = Breakpoints(context).isWide();
+    bool isDesktop = Breakpoints(context).isDesktop();
+    bool isTablet = Breakpoints(context).isTablet();
+    bool isMobile = Breakpoints(context).isMobile();
 
     if (isWide) return 18.0;
     if (isDesktop) return 16.0;
@@ -131,8 +128,20 @@ class Typos {
     FontWeight? fontWeight,
     double? height,
   }) {
+    bool isWide = Breakpoints(context).isWide();
+    bool isDesktop = Breakpoints(context).isDesktop();
+    bool isTablet = Breakpoints(context).isTablet();
+    bool isMobile = Breakpoints(context).isMobile();
+
+    double fontSize = FontSize(context).regular;
+
+    if (isWide) fontSize = FontSize(context).small;
+    if (isDesktop) fontSize = FontSize(context).mini;
+    if (isTablet) fontSize = FontSize(context).micro;
+    if (isMobile) fontSize = FontSize(context).nano;
+
     return TextStyle(
-      fontSize: FontSize(context).large,
+      fontSize: fontSize,
       fontWeight: fontWeight ?? FontWeight.w700,
       fontFamily: 'ibmPlexMono',
       color: color ?? Shades.darkText,

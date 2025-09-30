@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_physics/flutter_physics.dart';
-import 'package:flutter_tilt/flutter_tilt.dart';
 
-class AnimatedSkew extends StatefulWidget {
-  const AnimatedSkew({
-    required this.child,
+class SkewedText extends StatefulWidget {
+  const SkewedText({
+    required this.text,
+    required this.textStyle,
     this.skewed = false,
     this.duration = const Duration(milliseconds: 600),
     this.reverseDuration = const Duration(milliseconds: 300),
@@ -14,12 +14,12 @@ class AnimatedSkew extends StatefulWidget {
     this.rotationZ = 0,
     this.perspective = 0.08,
     this.scale = 1.2,
-    this.translateX = 0,
     required this.width,
     super.key,
   });
 
-  final Widget child;
+  final String text;
+  final TextStyle textStyle;
   final bool skewed;
   final Duration duration;
   final Duration reverseDuration;
@@ -28,13 +28,12 @@ class AnimatedSkew extends StatefulWidget {
   final double rotationZ;
   final double perspective;
   final double scale;
-  final double translateX;
   final double width;
   @override
-  State<AnimatedSkew> createState() => _AnimatedSkewState();
+  State<SkewedText> createState() => _SkewedText();
 }
 
-class _AnimatedSkewState extends State<AnimatedSkew> with SingleTickerProviderStateMixin {
+class _SkewedText extends State<SkewedText> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _rotationXAnimation;
   late Animation<double> _rotationYAnimation;
@@ -44,6 +43,24 @@ class _AnimatedSkewState extends State<AnimatedSkew> with SingleTickerProviderSt
 
   final Spring inCurve = Spring.boingoingoing;
   final Curve outCurve = Curves.easeInExpo;
+
+  double getTextWidth(String text, TextStyle style) {
+    final TextPainter textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.start,
+    );
+    textPainter.layout();
+    return textPainter.width;
+  }
+
+  double getXTranslate() {
+    double textWidth = getTextWidth(widget.text, widget.textStyle);
+    double width = widget.width;
+    double xAmount = (width - textWidth) / 2;
+    print('WIDTH: $width\nTEXT WIDTH: $textWidth\nX AMOUNT: $xAmount');
+    return -xAmount;
+  }
 
   @override
   void initState() {
@@ -101,7 +118,7 @@ class _AnimatedSkewState extends State<AnimatedSkew> with SingleTickerProviderSt
 
     _translateAnimation = Tween<double>(
       begin: 0.0,
-      end: widget.translateX,
+      end: getXTranslate(),
     ).animate(CurvedAnimation(
       parent: _controller,
       curve: inCurve,
@@ -156,7 +173,7 @@ class _AnimatedSkewState extends State<AnimatedSkew> with SingleTickerProviderSt
 
       _translateAnimation = Tween<double>(
         begin: currentTranslate,
-        end: widget.translateX,
+        end: getXTranslate(),
       ).animate(CurvedAnimation(
         parent: _controller,
         curve: inCurve,
@@ -214,7 +231,7 @@ class _AnimatedSkewState extends State<AnimatedSkew> with SingleTickerProviderSt
   }
 
   @override
-  void didUpdateWidget(AnimatedSkew oldWidget) {
+  void didUpdateWidget(SkewedText oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.skewed != oldWidget.skewed) {
@@ -241,11 +258,7 @@ class _AnimatedSkewState extends State<AnimatedSkew> with SingleTickerProviderSt
       _controller.reverseDuration = widget.reverseDuration;
     }
 
-    if (widget.rotationX != oldWidget.rotationX ||
-        widget.rotationY != oldWidget.rotationY ||
-        widget.rotationZ != oldWidget.rotationZ ||
-        widget.scale != oldWidget.scale ||
-        widget.translateX != oldWidget.translateX) {
+    if (widget.rotationX != oldWidget.rotationX || widget.rotationY != oldWidget.rotationY || widget.rotationZ != oldWidget.rotationZ || widget.scale != oldWidget.scale) {
       _createAnimations();
     }
   }
@@ -256,52 +269,26 @@ class _AnimatedSkewState extends State<AnimatedSkew> with SingleTickerProviderSt
     super.dispose();
   }
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   return AnimatedBuilder(
-  //     animation: _controller,
-  //     builder: (context, child) {
-  //       return Transform(
-  //         alignment: Alignment.center,
-  //         transform: Matrix4.identity()
-  //           ..setEntry(3, 2, widget.perspective)
-  //           ..rotateX(_rotationXAnimation.value)
-  //           ..rotateY(_rotationYAnimation.value)
-  //           ..rotateZ(_rotationZAnimation.value)
-  //           ..scale(_scaleAnimation.value)
-  //           ..translate(_translateAnimation.value, 0, 0),
-  //         child: widget.child,
-  //       );
-  //     },
-  //   );
-  // }
-
   @override
   Widget build(BuildContext context) {
-    return Tilt(
-      fps: 120,
-      lightConfig: LightConfig(disable: true),
-      shadowConfig: ShadowConfig(disable: true),
-      lightShadowMode: LightShadowMode.base,
-      tiltConfig: TiltConfig(
-        enableGestureSensors: false,
-        enableGestureTouch: true,
-        enableGestureHover: true,
-        filterQuality: FilterQuality.medium,
-        moveDuration: const Duration(milliseconds: 100),
-        angle: 35,
-        direction: [
-          TiltDirection.topLeft,
-          TiltDirection.topRight,
-          TiltDirection.bottomLeft,
-          TiltDirection.bottomRight,
-        ],
-      ),
-      child: SizedBox(
-        width: widget.width,
-        height: widget.width,
-        child: Center(child: widget.child),
-      ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, widget.perspective)
+            ..rotateX(_rotationXAnimation.value)
+            ..rotateY(_rotationYAnimation.value)
+            ..rotateZ(_rotationZAnimation.value)
+            ..translate(_translateAnimation.value, 0, 0)
+            ..scale(_scaleAnimation.value),
+          child: Text(
+            widget.text,
+            style: widget.textStyle,
+          ),
+        );
+      },
     );
   }
 }

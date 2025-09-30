@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:portfolio/models/about.dart';
 import 'package:portfolio/services/db.dart';
 import 'package:stacked/stacked.dart';
@@ -15,15 +16,26 @@ class SkillsViewModel extends BaseViewModel {
   SkillCategory? get selectedSkillCategory => _selectedSkillCategory;
 
   List<String> get tags => selectedSkillCategory?.skills.map((e) => e.name).toList() ?? skillCategories.map((e) => e.name).toList();
+  List<String> get clickableTags => tags.where((e) => isClickable(e)).toList();
 
   void setSelectedSkills(SkillCategory skillCategory) {
     _selectedSkillCategory = skillCategory;
     notifyListeners();
   }
 
-  void onTagTap(String skill) {
-    SkillCategory? cat = skillCategories.firstWhere((e) => e.name == skill);
-    print(cat.skills);
+  Offset? _lastClickPosition;
+  Offset? get lastClickPosition => _lastClickPosition;
+
+  void onTagTap(int? skillId, Offset? clickPostion) async {
+    if (skillId == null) return;
+
+    _lastClickPosition = clickPostion;
+    notifyListeners();
+
+    print('On Tag Tap postion: ${clickPostion?.dx}, ${clickPostion?.dy}');
+
+    String? categoryName = clickableTags[skillId];
+    SkillCategory? cat = skillCategories.firstWhere((e) => e.name == categoryName);
     setSelectedSkills(cat);
     notifyListeners();
   }

@@ -8,6 +8,7 @@ import 'package:portfolio/widgets/boxbutton.dart';
 import 'package:portfolio/widgets/cloud/cloud_view.dart';
 import 'package:portfolio/widgets/md_viewer.dart';
 import 'package:portfolio/widgets/pressure/pressure_view.dart';
+import 'package:portfolio/widgets/tags/tags_view.dart';
 import 'package:rive/rive.dart';
 import 'package:stacked/stacked.dart';
 import 'about_viewmodel.dart';
@@ -41,10 +42,6 @@ class AboutView extends StatelessWidget {
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
               item: AboutItems(context).avatar,
-              // position: BoxPosition(
-              //   start: Coords(0, 0),
-              //   end: Coords(1, 1),
-              // ),
               background: homeModel.backgroundColor,
               foreground: homeModel.foregroundColor,
               child: (box) => model.about != null
@@ -76,11 +73,6 @@ class AboutView extends StatelessWidget {
               // ),
               item: AboutItems(context).theo,
               child: (box) {
-                Size viewSize = MediaQuery.of(context).size;
-                double verticalPadding = (viewSize.height -
-                        (box.boxSize * Constants.yCount(context))) /
-                    2;
-                double horizontalPadding = Constants.mainPadding(context);
                 return ClipRRect(
                   child: PressureView(
                     text: "THEO".toUpperCase(),
@@ -118,11 +110,10 @@ class AboutView extends StatelessWidget {
                 child: (hovering) => Center(
                   child: AnimatedSkew(
                     skewed: hovering,
-                    translateX: 15,
+                    width: box.boxSize,
                     child: Text(
                       'ACCUEIL',
-                      style: Typos(context)
-                          .large(color: homeModel.backgroundColor),
+                      style: Typos(context).large(color: homeModel.backgroundColor),
                     ),
                   ),
                 ),
@@ -145,11 +136,10 @@ class AboutView extends StatelessWidget {
                 child: (hovering) => Center(
                   child: AnimatedSkew(
                     skewed: hovering,
-                    translateX: 35,
+                    width: box.boxSize,
                     child: Text(
                       'COMPETENCES',
-                      style: Typos(context)
-                          .large(color: homeModel.backgroundColor),
+                      style: Typos(context).large(color: homeModel.backgroundColor),
                     ),
                   ),
                 ),
@@ -222,16 +212,13 @@ class AboutView extends StatelessWidget {
                 item: AboutItems(context).skills,
                 child: (box) {
                   List<String> tags = model.about?.mainSkills ?? [];
-                  return CloudView(
+                  return TagsView(
                     tags: tags,
-                    height: box.boxSize * box.position.height,
-                    width: box.boxSize * box.position.width,
-                    mousePositionStream: homeModel.cursorPositionStream,
-                    foregroundColor: box.foreground,
-                    backgroundColor: box.background,
-                    topViewportOffset: box.position.getTopOffsetFromViewport(context: context, boxSize: boxSize),
-                    leftViewportOffset: box.position.getLeftOffsetFromViewport(context: context, boxSize: boxSize),
-                    blur: false,
+                    box: box,
+                    cursorPositionStream: homeModel.cursorPositionStream,
+                    background: box.background,
+                    foreground: box.foreground,
+                    fillUpTo: 0,
                   );
                 },
               ),

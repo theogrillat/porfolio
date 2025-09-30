@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:async';
 
 class TextPressure extends StatefulWidget {
