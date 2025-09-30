@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tilt/flutter_tilt.dart';
+import 'package:portfolio/services/tilt_service.dart' as tilt_service;
 import 'package:portfolio/shared/coords.dart';
 import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/shared/styles.dart';
@@ -12,6 +13,7 @@ import 'package:portfolio/views/project/project_view.dart';
 import 'package:portfolio/views/skills/skills_view.dart';
 import 'package:portfolio/widgets/animated_skew.dart';
 import 'package:portfolio/widgets/boxbutton.dart';
+import 'package:portfolio/widgets/hover.dart';
 import 'package:portfolio/widgets/pressure/pressure_view.dart';
 import 'package:stacked/stacked.dart';
 import 'package:rive/rive.dart';
@@ -53,6 +55,57 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
         },
         onDispose: (model) => model.onDispose(),
         builder: (context, model, child) {
+          if (model.isTiltPermissionGranted != null && !model.isTiltPermissionGranted!) {
+            return Container(
+              color: model.backgroundColor,
+              child: Center(
+                child: Material(
+                  color: Colors.transparent,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Ce site nécessite\nun accès au capteur\nde mouvement pour fonctionner',
+                        style: Typos(context).regular(color: model.foregroundColor),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 30),
+                      GestureDetector(
+                        onTap: () async {
+                          await tilt_service.TiltService.instance.requestPermission();
+                          model.updateTiltPermissionGranted(true);
+                        },
+                        child: Hover(
+                          child: (hover) => AnimatedContainer(
+                            height: 200,
+                            width: 200,
+                            duration: const Duration(milliseconds: 100),
+                            curve: Curves.easeInOutCubicEmphasized,
+                            decoration: BoxDecoration(
+                              color: model.foregroundColor,
+                              borderRadius: hover ? BorderRadius.circular(100) : BorderRadius.zero,
+                            ),
+                            child: Center(
+                              child: AnimatedScale(
+                                scale: hover ? 0.9 : 1,
+                                duration: const Duration(milliseconds: 100),
+                                curve: Curves.easeInOutCubicEmphasized,
+                                child: Text(
+                                  'Autoriser\nl\'access',
+                                  style: Typos(context).regular(color: model.backgroundColor),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
           return AnimatedContainer(
             duration: model.transitionDuration,
             curve: model.transitionCurve,
@@ -75,7 +128,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                         onHover: model.globalMouseRegionEventHandler,
                         child: Tilt(
                           fps: 120,
-                          disable: model.pauseTilt,
                           tiltStreamController: model.tiltStreamController,
                           lightConfig: LightConfig(disable: true),
                           shadowConfig: ShadowConfig(disable: true),

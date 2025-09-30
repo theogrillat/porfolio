@@ -52,6 +52,7 @@ dependencies:
 
   http: any
   logger: ^2.6.1
+  web: ^1.1.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

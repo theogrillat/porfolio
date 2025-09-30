@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 
 class Hover extends StatefulWidget {
   const Hover({
@@ -14,33 +15,57 @@ class Hover extends StatefulWidget {
 }
 
 class _HoverState extends State<Hover> {
-  bool _hovering = false;
-  bool get hovering => _hovering;
+  bool _mouseHovering = false;
+  bool _touchPressed = false;
 
-  void setHovering(bool value) {
-    if (_hovering == value) return;
+  bool get hovering => _mouseHovering || _touchPressed;
+
+  void setMouseHovering(bool value) {
+    if (_mouseHovering == value) return;
     setState(() {
-      _hovering = value;
+      _mouseHovering = value;
+    });
+  }
+
+  void setTouchPressed(bool value) {
+    if (_touchPressed == value) return;
+    setState(() {
+      _touchPressed = value;
     });
   }
 
   @override
   void initState() {
     super.initState();
-    setHovering(false);
+    setMouseHovering(false);
+    setTouchPressed(false);
   }
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: widget.showCursor ? SystemMouseCursors.click : SystemMouseCursors.basic,
-      onEnter: (_) => {
-        setHovering(true),
+    return Listener(
+      onPointerDown: (event) {
+        // Only handle touch events, not mouse events
+        if (event.kind == PointerDeviceKind.touch) {
+          setTouchPressed(true);
+        }
       },
-      onExit: (_) => {
-        setHovering(false),
+      onPointerUp: (event) {
+        if (event.kind == PointerDeviceKind.touch) {
+          setTouchPressed(false);
+        }
       },
-      child: widget.child(hovering),
+      onPointerCancel: (event) {
+        if (event.kind == PointerDeviceKind.touch) {
+          setTouchPressed(false);
+        }
+      },
+      child: MouseRegion(
+        cursor: widget.showCursor ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        onEnter: (_) => setMouseHovering(true),
+        onExit: (_) => setMouseHovering(false),
+        child: widget.child(hovering),
+      ),
     );
   }
 }

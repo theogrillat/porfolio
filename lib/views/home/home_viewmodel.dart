@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tilt/flutter_tilt.dart';
 import 'package:portfolio/models/project.dart';
 import 'package:portfolio/services/db.dart';
+import 'package:portfolio/services/tilt_service.dart';
 import 'package:portfolio/shared/styles.dart';
 import 'package:portfolio/shared/utils.dart';
 import 'package:sensors_plus/sensors_plus.dart';
@@ -332,32 +333,27 @@ class HomeViewmodel extends BaseViewModel {
   final StreamController<TiltStreamModel> _tiltStreamController = StreamController<TiltStreamModel>.broadcast();
   StreamController<TiltStreamModel> get tiltStreamController => _tiltStreamController;
 
-  late StreamSubscription _sensorSubscription;
-
-  bool _pauseTilt = false;
-  bool get pauseTilt => _pauseTilt;
-
-  void sensorHandler(GyroscopeEvent event) {
-    print('sensorHandler');
-  }
-
-  void onSensorHandlerError(Object error) {
-    print('onSensorHandlerError');
-    print(error);
-  }
-
   // ============================================================================
   // LIFECYCLE MANAGEMENT
   // ============================================================================
+
+  bool? _tiltPermissionGranted;
+  bool? get isTiltPermissionGranted => _tiltPermissionGranted;
+
+  void updateTiltPermissionGranted(bool value) {
+    _tiltPermissionGranted = value;
+    notifyListeners();
+  }
 
   void onInit({
     required double boxSize,
   }) async {
     try {
+      _tiltPermissionGranted = await TiltService.instance.requestPermission();
+      notifyListeners();
       _boxSize = boxSize;
       notifyListeners();
       getProjects();
-      _sensorSubscription = gyroscopeEventStream().listen(sensorHandler, onError: onSensorHandlerError);
       await Future.delayed(const Duration(seconds: 1));
       showGridItems(showGridItemsCount);
     } catch (e) {
@@ -368,6 +364,5 @@ class HomeViewmodel extends BaseViewModel {
 
   void onDispose() {
     _cursorPositionController.close();
-    _sensorSubscription.cancel();
   }
 }
