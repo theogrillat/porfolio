@@ -14,15 +14,19 @@ import 'package:stacked/stacked.dart';
 /// proximity, with smooth interpolation driven by a Ticker.
 class PressureViewModel extends BaseViewModel {
   // ============================================================================
-  // CONSTANTS & CONFIG
+  // PROPERTIES
   // ============================================================================
+
+  // ----------------------------------------------------------------------------
+  // CONFIGURATION
+  // ----------------------------------------------------------------------------
 
   static const double _lerpSpeed = 0.15; // 0.0..1.0 interpolation speed
   static const double _gutterPx = 4.0; // Horizontal total padding/gutter
 
-  // ============================================================================
+  // ----------------------------------------------------------------------------
   // EXTERNAL STREAMS & SUBSCRIPTIONS
-  // ============================================================================
+  // ----------------------------------------------------------------------------
 
   late Stream<Offset?> _mousePositionStream;
   Stream<Offset?> get mousePositionStream => _mousePositionStream;
@@ -33,9 +37,9 @@ class PressureViewModel extends BaseViewModel {
   StreamSubscription<double?>? _tiltStreamSubscription;
   StreamSubscription<double?>? get tiltStreamSubscription => _tiltStreamSubscription;
 
-  // ============================================================================
+  // ----------------------------------------------------------------------------
   // ANIMATION & EASING
-  // ============================================================================
+  // ----------------------------------------------------------------------------
 
   /// Easing curve applied to the proximity influence.
   Curve _curve = Curves.easeOutQuad;
@@ -43,9 +47,9 @@ class PressureViewModel extends BaseViewModel {
   late TickerProvider _tickerProvider;
   Ticker? _ticker;
 
-  // ============================================================================
+  // ----------------------------------------------------------------------------
   // STATE: INPUT, LAYOUT, AND INTERNAL BUFFERS
-  // ============================================================================
+  // ----------------------------------------------------------------------------
 
   String _text = '';
   double _totalWidth = 0;
@@ -79,8 +83,24 @@ class PressureViewModel extends BaseViewModel {
   final List<double> _targetWidths = [];
   final List<double> _targetAmounts = [];
 
+  double? _currentTilt;
+  double? get currentTilt => _currentTilt;
+
+  double? get virtualMouseX {
+    if (_currentTilt == null) return null;
+    double clampedTilt = _currentTilt!.clamp(-0.5, 0.5);
+
+    double x = interpolate(
+      value: clampedTilt,
+      range: [-0.5, 0.5],
+      outputRange: [0, _totalWidth],
+    );
+
+    return x + _leftViewportOffset;
+  }
+
   // ============================================================================
-  // PUBLIC API
+  // LIFECYCLE
   // ============================================================================
 
   /// Initializes the ViewModel with input text, sizing, streams, and animation
@@ -135,21 +155,16 @@ class PressureViewModel extends BaseViewModel {
     _tiltStreamSubscription = TiltService.instance.tiltStream.listen(updateTilt);
   }
 
-  double? _currentTilt;
-  double? get currentTilt => _currentTilt;
-
-  double? get virtualMouseX {
-    if (_currentTilt == null) return null;
-    double clampedTilt = _currentTilt!.clamp(-0.5, 0.5);
-
-    double x = interpolate(
-      value: clampedTilt,
-      range: [-0.5, 0.5],
-      outputRange: [0, _totalWidth],
-    );
-
-    return x + _leftViewportOffset;
+  /// Disposes subscriptions and ticker. Must be called by the owning view.
+  void onDispose() {
+    _mousePositionStreamSubscription?.cancel();
+    _tiltStreamSubscription?.cancel();
+    _stopTicker();
   }
+
+  // ============================================================================
+  // PUBLIC METHODS
+  // ============================================================================
 
   /// Updates total width and viewport offset; keeps proportions and targets
   /// consistent with current pointer position.
@@ -175,13 +190,6 @@ class PressureViewModel extends BaseViewModel {
 
     _updateTargetWidths(_lastMouseX == 0 ? null : _lastMouseX);
     notifyListeners();
-  }
-
-  /// Disposes subscriptions and ticker. Must be called by the owning view.
-  void onDispose() {
-    _mousePositionStreamSubscription?.cancel();
-    _tiltStreamSubscription?.cancel();
-    _stopTicker();
   }
 
   /// Returns the x-offset (from the left) for the item at [index], with an
@@ -222,7 +230,7 @@ class PressureViewModel extends BaseViewModel {
     if (!isMobileWebBrowser) return;
     if (tilt != null) {
       // Handle tilt (-1.0 to 1.0)
-      // print('Tilt: ${(tilt * 100).toStringAsFixed(1)}%');
+      // print('Tilt: \${(tilt * 100).toStringAsFixed(1)}%');
       _currentTilt = tilt;
       notifyListeners();
 
@@ -238,7 +246,7 @@ class PressureViewModel extends BaseViewModel {
   }
 
   // ============================================================================
-  // PRIVATE: COMPUTATIONS & HELPERS
+  // PRIVATE METHODS
   // ============================================================================
 
   /// Easing function for proximity response based on [_curve].
@@ -314,10 +322,6 @@ class PressureViewModel extends BaseViewModel {
       notifyListeners();
     }
   }
-
-  // ============================================================================
-  // PRIVATE: TICKER LIFECYCLE
-  // ============================================================================
 
   void _startTicker() {
     _ticker?.dispose();

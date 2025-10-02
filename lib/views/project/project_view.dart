@@ -36,6 +36,7 @@ class ProjectView extends StatelessWidget {
           children: [
             GridBox(
                 show: homeModel.currentGridIndex >= 1,
+                blur: homeModel.blurPage,
                 transitionDuration: homeModel.transitionDuration,
                 transitionCurve: homeModel.transitionCurve,
                 boxSize: boxSize,
@@ -55,6 +56,7 @@ class ProjectView extends StatelessWidget {
                 }),
             GridBox(
               show: homeModel.currentGridIndex >= 2,
+              blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -69,6 +71,7 @@ class ProjectView extends StatelessWidget {
             ),
             GridBox(
               show: homeModel.currentGridIndex >= 3,
+              blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -87,8 +90,8 @@ class ProjectView extends StatelessWidget {
                     box: box,
                     radius: boxSize * 1.5,
                     minWidth: 10,
-                    maxWidth: 200 / n,
-                    maxWeight: 1000,
+                    maxWidth: 150 / n,
+                    maxWeight: 600,
                     strength: 1.5,
                     leftViewportOffset: box.position.getLeftOffsetFromViewport(
                       context: context,
@@ -102,6 +105,7 @@ class ProjectView extends StatelessWidget {
               background: project.background,
               foreground: project.foreground,
               show: homeModel.currentGridIndex >= 4 && !homeModel.isFirstProject,
+              blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -119,7 +123,7 @@ class ProjectView extends StatelessWidget {
                     width: box.boxSize,
                     scale: 1.5,
                     child: Text(
-                      'PRECEDENT',
+                      '/prev',
                       style: Typos(context).large(color: project.background),
                     ),
                   ),
@@ -130,6 +134,7 @@ class ProjectView extends StatelessWidget {
               background: project.background,
               foreground: project.foreground,
               show: homeModel.currentGridIndex >= 5 && !homeModel.isLastProject,
+              blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -147,7 +152,7 @@ class ProjectView extends StatelessWidget {
                     width: box.boxSize,
                     scale: 1.7,
                     child: Text(
-                      'SUIVANT',
+                      '/next',
                       style: Typos(context).large(color: project.background),
                     ),
                   ),
@@ -158,6 +163,7 @@ class ProjectView extends StatelessWidget {
               background: project.background,
               foreground: project.foreground,
               show: homeModel.currentGridIndex >= 6,
+              blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -173,7 +179,7 @@ class ProjectView extends StatelessWidget {
                     skewed: hovering,
                     width: box.boxSize,
                     child: Text(
-                      'ACCUEIL',
+                      '/home',
                       style: Typos(context).large(color: project.background),
                     ),
                   ),
@@ -185,6 +191,7 @@ class ProjectView extends StatelessWidget {
               foreground: project.foreground,
               key: ValueKey('screenshot_0_${project.screenshots[0].url}'),
               show: homeModel.currentGridIndex >= 7,
+              blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -200,6 +207,7 @@ class ProjectView extends StatelessWidget {
               foreground: project.foreground,
               key: ValueKey('screenshot_1_${project.screenshots[1].url}'),
               show: homeModel.currentGridIndex >= 8,
+              blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -211,6 +219,7 @@ class ProjectView extends StatelessWidget {
               foreground: project.foreground,
               key: ValueKey('screenshot_2_${project.screenshots[2].url}'),
               show: homeModel.currentGridIndex >= 9,
+              blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -222,6 +231,7 @@ class ProjectView extends StatelessWidget {
               foreground: project.foreground,
               key: ValueKey('screenshot_3_${project.screenshots[3].url}'),
               show: homeModel.currentGridIndex >= 10,
+              blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -270,6 +280,7 @@ class ProjectScreenshopImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (url.isEmpty) return Container();
     return Hero(
       tag: url,
       child: Image.network(

@@ -4,9 +4,21 @@ import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/views/project/project_view.dart';
 import 'package:stacked/stacked.dart';
 
+// ============================================================================
+// PROJECT VIEWMODEL
+// ============================================================================
+
 class ProjectViewModel extends BaseViewModel {
+  // ============================================================================
+  // PROPERTIES
+  // ============================================================================
+
   late Project _project;
   Project get project => _project;
+
+  // ============================================================================
+  // LIFECYCLE
+  // ============================================================================
 
   void onInit(Project prj) {
     _project = prj;
@@ -14,6 +26,10 @@ class ProjectViewModel extends BaseViewModel {
   }
 
   void onDispose() {}
+
+  // ============================================================================
+  // PUBLIC METHODS
+  // ============================================================================
 
   void openScreenshot(BuildContext context, String url, Box box) {
     Navigator.push(
@@ -23,19 +39,17 @@ class ProjectViewModel extends BaseViewModel {
           backgroundColor: Colors.transparent,
           body: Stack(
             children: [
-              // Background overlay that dismisses the dialog
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
                 child: Container(
                   width: double.infinity,
                   height: double.infinity,
-                  color: Colors.black.withValues(alpha: 0.8),
+                  color: Colors.black.withOpacity(0.8),
                 ),
               ),
-              // Image content with Hero animation
               Center(
                 child: GestureDetector(
-                  onTap: () {}, // Prevent dialog from closing when tapping the image
+                  onTap: () {},
                   child: SizedBox(
                     width: (MediaQuery.of(context).size.height * 0.9) / 2,
                     height: MediaQuery.of(context).size.height * 0.9,
@@ -46,7 +60,7 @@ class ProjectViewModel extends BaseViewModel {
             ],
           ),
         ),
-        opaque: false, // This is key for transparency
+        opaque: false,
         barrierDismissible: true,
         transitionDuration: const Duration(milliseconds: 300),
         reverseTransitionDuration: const Duration(milliseconds: 200),

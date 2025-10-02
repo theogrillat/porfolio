@@ -93,11 +93,11 @@ double calcBoxSize(BuildContext context) {
   int yCount = Constants.yCount(context);
   double w = MediaQuery.of(context).size.width;
   double h = MediaQuery.of(context).size.height;
-  double sidebar = Constants.sidebarWidth(context);
+  double sidebar = isPortrait(context) ? Constants.sidebarHeight(context) : Constants.sidebarWidth(context);
   double padding = Constants.mainPadding(context);
   double boxSize = (w - sidebar - padding * 2) / xCount;
   if ((boxSize * yCount) + padding * 2 > h) {
-    boxSize = (h - padding * 2) / yCount;
+    boxSize = (h - sidebar - padding * 2) / yCount;
   }
   return boxSize;
 }

@@ -1,14 +1,34 @@
 import 'package:flutter/services.dart';
 import 'package:stacked/stacked.dart';
 
-class MouseViewModel extends BaseViewModel {
-  double _x = 0;
-  double _y = 0;
+// ============================================================================
+// MOUSE VIEWMODEL
+// ============================================================================
 
+class MouseViewModel extends BaseViewModel {
+  // ============================================================================
+  // PROPERTIES
+  // ============================================================================
+
+  double _x = 0;
   double get x => _x;
+
+  double _y = 0;
   double get y => _y;
 
   bool isIn = false;
+
+  // ============================================================================
+  // LIFECYCLE
+  // ============================================================================
+
+  void onInit() {}
+
+  void onDispose() {}
+
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
 
   void onEnter(PointerEnterEvent event) {
     isIn = true;
@@ -25,7 +45,4 @@ class MouseViewModel extends BaseViewModel {
     _y = event.position.dy;
     notifyListeners();
   }
-
-  void onInit() {}
-  void onDispose() {}
 }

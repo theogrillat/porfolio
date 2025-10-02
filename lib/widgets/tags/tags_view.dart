@@ -24,7 +24,7 @@ class TagsView extends StatefulWidget {
 
   final List<String> tags;
   final List<String> clickableTags;
-  final Function(int, Offset?)? onTagClicked;
+  final Function(int, String, Offset?)? onTagClicked;
   final Color foreground;
   final Color background;
   final double? sphereMargin;
@@ -96,7 +96,7 @@ class _TagsViewState extends State<TagsView> with SingleTickerProviderStateMixin
             if (widget.onTagClicked != null) {
               final tag = model.hoveredTag;
               if (tag != null) {
-                widget.onTagClicked!(tag.clickID!, model.lastCursorPosition);
+                widget.onTagClicked!(tag.clickID!, tag.text, model.lastCursorPosition);
               }
             }
           },
@@ -112,7 +112,7 @@ class _TagsViewState extends State<TagsView> with SingleTickerProviderStateMixin
             final tag = model.getTappedTag(event.localPosition, 45);
             if (tag != null) {
               print('Tag tapped: ${tag.clickID} ${tag.text}');
-              widget.onTagClicked!(tag.clickID!, model.lastCursorPosition);
+              widget.onTagClicked!(tag.clickID!, tag.text, model.lastCursorPosition);
             }
           }
         },
@@ -198,6 +198,7 @@ class OptimizedTagsPainter extends CustomPainter {
     final sizeRange = maxSize - minSizeValue;
 
     // First, paint all non-hovered tags
+    tags.sort((a, b) => a.size.compareTo(b.size));
     for (final tag in tags) {
       if (tag == hoveredTag) continue; // Skip hovered tag for now
 
@@ -235,26 +236,52 @@ class OptimizedTagsPainter extends CustomPainter {
 
       if (opacity < 1.0) {
         textPainter = _createTextPainter(
-          tag.text,
-          textStyle.copyWith(
-            color: isHovered && tag.isClickable ? backgroundColor : textStyle.color?.withValues(alpha: opacity),
-            backgroundColor: isHovered && tag.isClickable ? foregroundColor : null,
-            decorationStyle: TextDecorationStyle.dotted,
-            decoration: tag.isClickable && !isHovered ? TextDecoration.underline : null,
-            fontSize: boxSize * 0.03,
-          ),
+          text: tag.text,
+          isClickable: tag.isClickable,
+          isHovered: isHovered,
+          backgroundColor: backgroundColor,
+          foregroundColor: foregroundColor,
+          opacity: opacity,
+          style: isMobileWebBrowser
+              ? textStyle.copyWith(
+                  color: tag.isClickable ? backgroundColor : textStyle.color?.withValues(alpha: opacity),
+                  backgroundColor: tag.isClickable ? foregroundColor : null,
+                  decoration: TextDecoration.none,
+                  fontSize: boxSize * 0.03 * 2,
+                )
+              : textStyle.copyWith(
+                  color: isHovered && tag.isClickable ? backgroundColor : textStyle.color?.withValues(alpha: opacity),
+                  backgroundColor: isHovered && tag.isClickable ? foregroundColor : null,
+                  decorationStyle: TextDecorationStyle.dotted,
+                  decoration: tag.isClickable && !isHovered ? TextDecoration.underline : null,
+                  decorationThickness: 2,
+                  fontSize: boxSize * 0.03 * 2,
+                ),
         );
       } else {
         final cacheKey = '${tag.text}_${textStyle.hashCode}_foreground_$foregroundColor';
         textPainter = _textPainterCache[cacheKey] ??= _createTextPainter(
-          tag.text,
-          textStyle.copyWith(
-            color: isHovered && tag.isClickable ? backgroundColor : textStyle.color,
-            backgroundColor: isHovered && tag.isClickable ? foregroundColor : null,
-            decorationStyle: TextDecorationStyle.dotted,
-            decoration: tag.isClickable && !isHovered ? TextDecoration.underline : null,
-            fontSize: boxSize * 0.03,
-          ),
+          isClickable: tag.isClickable,
+          isHovered: isHovered,
+          text: tag.text,
+          backgroundColor: backgroundColor,
+          foregroundColor: foregroundColor,
+          opacity: 1,
+          style: isMobileWebBrowser
+              ? textStyle.copyWith(
+                  color: tag.isClickable ? backgroundColor : textStyle.color,
+                  backgroundColor: tag.isClickable ? foregroundColor : null,
+                  decoration: TextDecoration.none,
+                  fontSize: boxSize * 0.03 * 2,
+                )
+              : textStyle.copyWith(
+                  color: isHovered && tag.isClickable ? backgroundColor : textStyle.color,
+                  backgroundColor: isHovered && tag.isClickable ? foregroundColor : null,
+                  decorationStyle: TextDecorationStyle.dotted,
+                  decorationThickness: 2,
+                  decoration: tag.isClickable && !isHovered ? TextDecoration.underline : null,
+                  fontSize: boxSize * 0.03 * 2,
+                ),
         );
         if (_textPainterCache.length > 1000) {
           _textPainterCache.remove(_textPainterCache.keys.first);
@@ -273,12 +300,64 @@ class OptimizedTagsPainter extends CustomPainter {
     canvas.restore();
   }
 
-  TextPainter _createTextPainter(String text, TextStyle style) {
+  TextPainter _createTextPainter({
+    required String text,
+    required TextStyle style,
+    required bool isClickable,
+    required bool isHovered,
+    required Color backgroundColor,
+    required Color foregroundColor,
+    required double opacity,
+  }) {
     return TextPainter(
       text: TextSpan(
-        text: text,
-        style: style,
+        text: '',
+        children: [
+          if (isClickable && !isMobileWebBrowser)
+            TextSpan(
+              text: isClickable && isHovered ? '/' : ' ',
+              style: style.copyWith(
+                color: backgroundColor,
+                decoration: TextDecoration.none,
+                backgroundColor: isClickable && isHovered ? foregroundColor : style.color?.withValues(alpha: opacity),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          if (isClickable && !isMobileWebBrowser)
+            TextSpan(
+              text: ' ',
+            ),
+          if (isClickable && isMobileWebBrowser)
+            TextSpan(
+              text: 'X',
+              style: style.copyWith(color: Colors.transparent),
+            ),
+          TextSpan(
+            text: text,
+            style: style,
+          ),
+          if (isClickable && isMobileWebBrowser)
+            TextSpan(
+              text: 'X',
+              style: style.copyWith(color: Colors.transparent),
+            ),
+        ],
       ),
+      // text: TextSpan(
+      //   text: text,
+      //   style: style,
+      //   children: isClickable ? [
+      //     TextSpan(
+      //       text: '/',
+      //       style: style.copyWith(
+      //         color: isHovered ? backgroundColor : foregroundColor,
+      //         decorationStyle: TextDecorationStyle.dotted,
+      //         decoration: isHovered ? TextDecoration.underline : null,
+      //         decorationThickness: 2,
+      //       ),
+      //     ),
+      //   ] : [],
+      // ),
       textDirection: TextDirection.ltr,
     )..layout();
   }

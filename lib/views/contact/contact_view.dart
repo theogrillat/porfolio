@@ -42,7 +42,7 @@ class ContactView extends StatelessWidget {
                   cursorPositionStream: homeModel.cursorPositionStream,
                   box: box,
                   fillUpTo: 500,
-                  onTagClicked: (int tagID, _) {
+                  onTagClicked: (int tagID, __, _) {
                     if (tagID >= 0) print('tag clicked: $tagID');
                   },
                   tags: [

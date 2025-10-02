@@ -29,13 +29,17 @@ const skillsBoxCount = 8;
 const contactBoxCount = 1;
 
 // ============================================================================
-// MAIN VIEWMODEL CLASS
+// HOME VIEWMODEL
 // ============================================================================
 
 class HomeViewmodel extends BaseViewModel {
   // ============================================================================
-  // NAVIGATION STATE
+  // PROPERTIES
   // ============================================================================
+
+  // ----------------------------------------------------------------------------
+  // NAVIGATION STATE
+  // ----------------------------------------------------------------------------
 
   NavigationState _navigationState = NavigationState.home;
   NavigationState get navigationState => _navigationState;
@@ -58,14 +62,107 @@ class HomeViewmodel extends BaseViewModel {
     return 0;
   }
 
+  // ----------------------------------------------------------------------------
+  // PROJECT MANAGEMENT
+  // ----------------------------------------------------------------------------
+
+  int? _currentPrjIndex = -1;
+  int? get currentPrjIndex => _currentPrjIndex;
+
+  Project? _currentProject;
+  Project? get currentProject => _currentProject;
+
+  bool get isLastProject => _prjs.isEmpty || _currentPrjIndex == _prjs.length - 1;
+  bool get isFirstProject => _prjs.isEmpty || _currentPrjIndex == 0;
+
+  List<Project> _prjs = [];
+  List<Project> get prjs => _prjs;
+
+  // ----------------------------------------------------------------------------
+  // UI STATE
+  // ----------------------------------------------------------------------------
+
+  late double _boxSize;
+  double get boxSize => _boxSize;
+
+  bool _isHovering = false;
+  bool get isHovering => _isHovering;
+
+  Offset? _hoverPosition;
+  Offset? get hoverPosition => _hoverPosition;
+
+  Color get backgroundColor {
+    if (_navigationState == NavigationState.project) return _currentProject?.background ?? Shades.mainColor;
+    return Shades.mainColor;
+  }
+
+  Color get foregroundColor {
+    if (_navigationState == NavigationState.project) return _currentProject?.foreground ?? Colors.black;
+    return Colors.black;
+  }
+
+  // ----------------------------------------------------------------------------
+  // TRANSITION & ANIMATION
+  // ----------------------------------------------------------------------------
+
+  final Duration _transitionDuration = const Duration(milliseconds: 100);
+  Duration get transitionDuration => _transitionDuration;
+
+  final Duration _itemTransitionDuration = const Duration(milliseconds: 100);
+  Duration get itemTransitionDuration => _itemTransitionDuration;
+
+  final Curve _transitionCurve = Curves.easeInOut;
+  Curve get transitionCurve => _transitionCurve;
+
+  int _currentGridIndex = 0;
+  int get currentGridIndex => _currentGridIndex;
+
+  // ----------------------------------------------------------------------------
+  // CURSOR & TILT
+  // ----------------------------------------------------------------------------
+
+  final StreamController<Offset?> _cursorPositionController = StreamController<Offset?>.broadcast();
+  Stream<Offset?> get cursorPositionStream => _cursorPositionController.stream;
+
+  final StreamController<TiltStreamModel> _tiltStreamController = StreamController<TiltStreamModel>.broadcast();
+  StreamController<TiltStreamModel> get tiltStreamController => _tiltStreamController;
+
+  bool? _tiltPermissionGranted;
+  bool? get isTiltPermissionGranted => _tiltPermissionGranted;
+
+  // ============================================================================
+  // LIFECYCLE
+  // ============================================================================
+
+  void onInit({
+    required double boxSize,
+  }) async {
+    try {
+      _tiltPermissionGranted = await TiltService.instance.requestPermission();
+      notifyListeners();
+      _boxSize = boxSize;
+      notifyListeners();
+      getProjects();
+      await Future.delayed(const Duration(seconds: 1));
+      showGridItems(showGridItemsCount);
+    } catch (e) {
+      print('Error');
+      print(e);
+    }
+  }
+
+  void onDispose() {
+    _cursorPositionController.close();
+  }
+
+  // ============================================================================
+  // NAVIGATION
+  // ============================================================================
+
   void setNavigationState(NavigationState state) {
     _navigationState = state;
     notifyListeners();
   }
-
-  // ============================================================================
-  // NAVIGATION METHODS
-  // ============================================================================
 
   Future<void> goToHome() async {
     await performTransition(() {
@@ -77,6 +174,7 @@ class HomeViewmodel extends BaseViewModel {
   }
 
   Future<void> goToProject() async {
+    if (_navigationState == NavigationState.project) return;
     await performTransition(() {
       _currentPrjIndex = 0;
       _currentProject = _prjs[0];
@@ -107,166 +205,16 @@ class HomeViewmodel extends BaseViewModel {
   }
 
   // ============================================================================
-  // TRANSITION SYSTEM
-  // ============================================================================
-
-  final Duration _transitionDuration = const Duration(milliseconds: 600);
-  Duration get transitionDuration => _transitionDuration;
-
-  final Duration _itemTransitionDuration = const Duration(milliseconds: 100);
-  Duration get itemTransitionDuration => _itemTransitionDuration;
-
-  final Curve _transitionCurve = Curves.easeInOut;
-  Curve get transitionCurve => _transitionCurve;
-
-  Future<void> performTransition(Function callback) async {
-    await hideGridItems();
-    callback();
-    await Future.delayed(_transitionDuration);
-    showGridItems(showGridItemsCount);
-  }
-
-  /// Calculates durations for grid items using a curve where each item gets
-  /// an increasingly greater duration while maintaining the same total duration.
-  ///
-  /// The curve uses a quadratic function: duration[i] = baseDuration * (i + 1)^2
-  /// This ensures the sum equals _itemTransitionDuration while each item
-  /// gets progressively longer durations.
-  List<Duration> _calculateCurvedDurations(bool invert, int count) {
-    if (count < 0) return [Duration.zero];
-    if (count == 0) return [Duration.zero];
-
-    // Calculate the sum of squares: 1^2 + 2^2 + 3^2 + ... + count^2
-    int sumOfSquares = 0;
-    for (int i = 1; i <= count; i++) {
-      sumOfSquares += i * i;
-    }
-
-    // Calculate base duration to ensure total equals _itemTransitionDuration
-    final totalMilliseconds = _itemTransitionDuration.inMilliseconds;
-    final baseDuration = totalMilliseconds / sumOfSquares;
-
-    // Generate durations using quadratic curve
-    List<Duration> durations = [];
-    for (int i = 1; i <= count; i++) {
-      final durationMs = (baseDuration * i * i).round();
-      durations.add(Duration(milliseconds: durationMs));
-    }
-
-    if (invert) {
-      durations = durations.reversed.toList();
-    }
-
-    return durations;
-  }
-
-  // ============================================================================
-  // GRID ANIMATION STATE
-  // ============================================================================
-
-  int _currentGridIndex = 0;
-  int get currentGridIndex => _currentGridIndex;
-
-  void showGridItems(int count) async {
-    final durations = _calculateCurvedDurations(false, count + 1);
-    for (int i = 0; i <= count; i++) {
-      await Future.delayed(durations[i]);
-      _currentGridIndex = i;
-      print(_currentGridIndex);
-      notifyListeners();
-    }
-  }
-
-  Future<void> hideGridItems() async {
-    print('Start --------- hideGridItems ----------------');
-    final initialGridIndex = _currentGridIndex;
-    final durations = _calculateCurvedDurations(true, initialGridIndex);
-    int durationIndex = 0;
-    while (_currentGridIndex > 0) {
-      await Future.delayed(durations[durationIndex]);
-      _currentGridIndex--;
-      durationIndex++;
-      print(_currentGridIndex);
-      notifyListeners();
-    }
-    notifyListeners();
-    await Future.delayed(_transitionDuration);
-    print('End --------- hideGridItems --------------------------------');
-  }
-
-  // ============================================================================
-  // UI STATE MANAGEMENT
-  // ============================================================================
-
-  late double _boxSize;
-  double get boxSize => _boxSize;
-
-  bool _isHovering = false;
-  bool get isHovering => _isHovering;
-
-  Offset? _hoverPosition;
-  Offset? get hoverPosition => _hoverPosition;
-
-  Color get backgroundColor {
-    if (_navigationState == NavigationState.project) return _currentProject?.background ?? Shades.mainColor;
-    return Shades.mainColor;
-  }
-
-  Color get foregroundColor {
-    if (_navigationState == NavigationState.project) return _currentProject?.foreground ?? Colors.black;
-    return Colors.black;
-  }
-
-  void onHovering(bool value, Offset position) {
-    // No box is hovering
-    if (_hoverPosition == null && value) {
-      _hoverPosition = position;
-      _isHovering = true;
-      notifyListeners();
-      return;
-    }
-
-    // The current box is no longer being hovered
-    if (_hoverPosition == position && !value) {
-      _hoverPosition = null;
-      _isHovering = false;
-      notifyListeners();
-      return;
-    }
-
-    if (_hoverPosition != position && value) {
-      _hoverPosition = position;
-      _isHovering = true;
-      notifyListeners();
-      return;
-    }
-  }
-
-  void updateBoxSize(double boxSize) {
-    _boxSize = boxSize;
-    notifyListeners();
-  }
-
-  // ============================================================================
   // PROJECT MANAGEMENT
   // ============================================================================
 
-  int? _currentPrjIndex = -1;
-  int? get currentPrjIndex => _currentPrjIndex;
-
-  Project? _currentProject;
-  Project? get currentProject => _currentProject;
-
-  bool get isLastProject => _prjs.isEmpty || _currentPrjIndex == _prjs.length - 1;
-  bool get isFirstProject => _prjs.isEmpty || _currentPrjIndex == 0;
-
-  List<Project> _prjs = [];
-  List<Project> get prjs => _prjs;
+  bool get anyProjectIsSelected => _currentPrjIndex != null && _currentPrjIndex! >= 0;
 
   void getProjects() async {
     _prjs = await DbService().getAllProjects();
+    _prjs.sort((a, b) => a.priority.compareTo(b.priority));
     print('---------------');
-    print("${_prjs.length} projects loaded");
+    print("\${_prjs.length} projects loaded");
     print('---------------');
     notifyListeners();
   }
@@ -302,11 +250,165 @@ class HomeViewmodel extends BaseViewModel {
   }
 
   // ============================================================================
-  // MOUSE CURSOR TRACKING
+  // MENU
   // ============================================================================
 
-  final StreamController<Offset?> _cursorPositionController = StreamController<Offset?>.broadcast();
-  Stream<Offset?> get cursorPositionStream => _cursorPositionController.stream;
+  bool _showMenu = false;
+  bool get showMenu => _showMenu;
+
+  bool get blurPage => false;
+
+  bool get showMenuButton => _navigationState == NavigationState.project || _navigationState == NavigationState.skills;
+
+  List<Project> get filteredProjects => _filterSkills.isEmpty ? _prjs : _prjs.where((p) => p.techStack.any((t) => _filterSkills.contains(t))).toList();
+
+  List<String> _filterSkills = [];
+  List<String> get filterSkills => _filterSkills;
+
+  double menuButtonSize(BuildContext context) {
+    if (isPortrait(context)) return 40;
+    return 75;
+  }
+
+  void toggleMenu() {
+    _showMenu = !_showMenu;
+    notifyListeners();
+  }
+
+  void openMenu() {
+    _showMenu = true;
+    notifyListeners();
+  }
+
+  void closeMenu() {
+    _showMenu = false;
+    notifyListeners();
+  }
+
+  void filterProjects(String skill) {
+    _filterSkills = [skill];
+    notifyListeners();
+    openMenu();
+  }
+
+  void clearFilter() {
+    _filterSkills = [];
+    notifyListeners();
+    openMenu();
+  }
+
+  void goToThisProject(Project project) async {
+    if (project == _currentProject) return;
+    await goToProject();
+    int index = _prjs.indexWhere((p) => p.id == p.id);
+
+    closeMenu();
+
+    await hideGridItems();
+
+    _currentPrjIndex = index;
+    _currentProject = project;
+    notifyListeners();
+
+    await Future.delayed(_transitionDuration);
+
+    showGridItems(showGridItemsCount);
+  }
+
+  // ============================================================================
+  // UI & ANIMATION
+  // ============================================================================
+
+  void updateBoxSize(double boxSize) {
+    _boxSize = boxSize;
+    notifyListeners();
+  }
+
+  void onHovering(bool value, Offset position) {
+    if (_hoverPosition == null && value) {
+      _hoverPosition = position;
+      _isHovering = true;
+      notifyListeners();
+      return;
+    }
+
+    if (_hoverPosition == position && !value) {
+      _hoverPosition = null;
+      _isHovering = false;
+      notifyListeners();
+      return;
+    }
+
+    if (_hoverPosition != position && value) {
+      _hoverPosition = position;
+      _isHovering = true;
+      notifyListeners();
+      return;
+    }
+  }
+
+  Future<void> performTransition(Function callback) async {
+    await hideGridItems();
+    callback();
+    await Future.delayed(_transitionDuration);
+    showGridItems(showGridItemsCount);
+  }
+
+  void showGridItems(int count) async {
+    final durations = _calculateCurvedDurations(false, count + 1);
+    for (int i = 0; i <= count; i++) {
+      await Future.delayed(durations[i]);
+      _currentGridIndex = i;
+      print(_currentGridIndex);
+      notifyListeners();
+    }
+  }
+
+  Future<void> hideGridItems() async {
+    print('Start --------- hideGridItems ----------------');
+    final initialGridIndex = _currentGridIndex;
+    final durations = _calculateCurvedDurations(true, initialGridIndex);
+    int durationIndex = 0;
+    while (_currentGridIndex > 0) {
+      await Future.delayed(durations[durationIndex]);
+      _currentGridIndex--;
+      durationIndex++;
+      print(_currentGridIndex);
+      notifyListeners();
+    }
+    notifyListeners();
+    await Future.delayed(_transitionDuration);
+    print('End --------- hideGridItems --------------------------------');
+  }
+
+  List<Duration> _calculateCurvedDurations(bool invert, int count) {
+    if (count < 0) return [Duration.zero];
+    if (count == 0) return [Duration.zero];
+
+    int sumOfSquares = 0;
+    for (int i = 1; i <= count; i++) {
+      sumOfSquares += i * i;
+    }
+
+    final totalMilliseconds = _itemTransitionDuration.inMilliseconds;
+    final baseDuration = totalMilliseconds / sumOfSquares;
+
+    List<Duration> durations = [];
+    for (int i = 1; i <= count; i++) {
+      final durationMs = (baseDuration * i * i).round();
+      durations.add(Duration(milliseconds: durationMs));
+    }
+
+    if (invert) {
+      durations = durations.reversed.toList();
+    }
+
+    return durations;
+  }
+
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
 
   void enteredAppArea() {
     _cursorPositionController.add(null);
@@ -330,39 +432,8 @@ class HomeViewmodel extends BaseViewModel {
   // TILT & SENSOR HANDLING
   // ============================================================================
 
-  final StreamController<TiltStreamModel> _tiltStreamController = StreamController<TiltStreamModel>.broadcast();
-  StreamController<TiltStreamModel> get tiltStreamController => _tiltStreamController;
-
-  // ============================================================================
-  // LIFECYCLE MANAGEMENT
-  // ============================================================================
-
-  bool? _tiltPermissionGranted;
-  bool? get isTiltPermissionGranted => _tiltPermissionGranted;
-
   void updateTiltPermissionGranted(bool value) {
     _tiltPermissionGranted = value;
     notifyListeners();
-  }
-
-  void onInit({
-    required double boxSize,
-  }) async {
-    try {
-      _tiltPermissionGranted = await TiltService.instance.requestPermission();
-      notifyListeners();
-      _boxSize = boxSize;
-      notifyListeners();
-      getProjects();
-      await Future.delayed(const Duration(seconds: 1));
-      showGridItems(showGridItemsCount);
-    } catch (e) {
-      print('Error');
-      print(e);
-    }
-  }
-
-  void onDispose() {
-    _cursorPositionController.close();
   }
 }

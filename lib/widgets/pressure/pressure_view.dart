@@ -103,7 +103,7 @@ class _PressureViewState extends State<PressureView> with TickerProviderStateMix
                           widget.text[index],
                           style: TextStyle(
                             fontFamily: 'Compressa VF',
-                            fontSize: widget.box.boxSize * 1.3,
+                            fontSize: widget.height * 1.3,
                             height: 0.1,
                             textBaseline: TextBaseline.ideographic,
                             color: widget.box.foreground,

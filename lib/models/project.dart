@@ -8,6 +8,8 @@ class Project {
   final List<Screenshot> screenshots;
   final Color background;
   final Color foreground;
+  final int priority;
+  final String id;
 
   Project({
     required this.title,
@@ -16,6 +18,8 @@ class Project {
     required this.screenshots,
     required this.background,
     required this.foreground,
+    this.priority = 0,
+    required this.id,
   });
 
   Project.fromMap(Map<String, dynamic> data)
@@ -24,8 +28,9 @@ class Project {
         techStack = (data['techStack'] ?? []).cast<String>(),
         screenshots = ((data['screenshots'] ?? []) as List<dynamic>).map((e) => Screenshot.fromMap(e as Map<String, dynamic>)).toList(),
         background = hex(data['background']),
-        foreground = hex(data['foreground']);
-
+        foreground = hex(data['foreground']),
+        priority = data['priority'] ?? 0,
+        id = data['id'] ?? '';
 
   Map<String, dynamic> toMap() {
     return {
@@ -35,6 +40,8 @@ class Project {
       'screenshots': screenshots.map((e) => e.toMap()).toList(),
       'background': background.value.toRadixString(16),
       'foreground': foreground.value.toRadixString(16),
+      'priority': priority,
+      'id': id,
     };
   }
 }

@@ -35,6 +35,30 @@ abstract class Items {
   }
 }
 
+class SharedItems extends Items {
+  SharedItems(super.context);
+
+  BoxItem get menu {
+    Coords desktopStart = Coords(5, 0);
+    Coords desktopEnd = Coords(6, 3);
+
+    Coords mobileStart = Coords(1, 0);
+    Coords mobileEnd = Coords(3, 6);
+
+    return buildItem(1, desktopStart, desktopEnd, mobileStart, mobileEnd);
+  }
+
+  BoxItem get menuBarrier {
+    Coords desktopStart = Coords(0, 0);
+    Coords desktopEnd = Coords(4, 3);
+
+    Coords mobileStart = Coords(0, 0);
+    Coords mobileEnd = Coords(0, 6);
+
+    return buildItem(1, desktopStart, desktopEnd, mobileStart, mobileEnd);
+  }
+}
+
 class LandingItems extends Items {
   LandingItems(super.context);
 

@@ -5,7 +5,6 @@ import 'package:portfolio/shared/styles.dart';
 import 'package:portfolio/shared/utils.dart';
 import 'package:portfolio/widgets/animated_skew.dart';
 import 'package:portfolio/widgets/boxbutton.dart';
-import 'package:portfolio/widgets/cloud/cloud_view.dart';
 import 'package:portfolio/widgets/hover.dart';
 import 'package:portfolio/widgets/pressure/pressure_view.dart';
 import 'package:portfolio/widgets/tags/tags_view.dart';
@@ -29,7 +28,9 @@ class SkillsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ViewModelBuilder<SkillsViewModel>.reactive(
       viewModelBuilder: () => SkillsViewModel(),
-      onViewModelReady: (model) => model.onInit(),
+      onViewModelReady: (model) => model.onInit(
+        projects: homeModel.prjs,
+      ),
       onDispose: (model) => model.onDispose(),
       builder: (context, model, child) {
         return Stack(
@@ -46,15 +47,15 @@ class SkillsView extends StatelessWidget {
                 box: box,
                 mousePositionStream: homeModel.cursorPositionStream,
                 onHovering: homeModel.onHovering,
-                onTap: model.selectedSkillCategory == null ? goBack : model.unselectSkills,
+                onTap: goBack,
                 invert: false,
                 child: (hovering) => Center(
                   child: AnimatedSkew(
                     skewed: hovering,
                     width: box.boxSize,
                     child: Text(
-                      '<--',
-                      style: Typos(context).large(color: Shades.mainColor).copyWith(fontSize: boxSize * 0.2),
+                      '/back',
+                      style: Typos(context).large(color: Shades.mainColor),
                     ),
                   ),
                 ),
@@ -100,22 +101,55 @@ class SkillsView extends StatelessWidget {
               background: homeModel.backgroundColor,
               foreground: homeModel.foregroundColor,
               child: (box) {
-                return AnimatedSwitcher(
-                  duration: homeModel.transitionDuration,
-                  switchInCurve: homeModel.transitionCurve,
-                  switchOutCurve: homeModel.transitionCurve,
-                  child: TagsView(
-                    key: ValueKey(model.tags.join('_')),
-                    background: box.background,
-                    foreground: box.foreground,
-                    cursorPositionStream: homeModel.cursorPositionStream,
-                    box: box,
-                    fillUpTo: 500,
-                    tags: model.tags,
-                    clickableTags: model.clickableTags,
-                    onTagClicked: (id, pos) => model.onTagTap(id, pos),
-                    initialCursorPosition: model.lastClickPosition,
-                  ),
+                return Stack(
+                  children: [
+                    AnimatedSwitcher(
+                      duration: homeModel.transitionDuration,
+                      switchInCurve: homeModel.transitionCurve,
+                      switchOutCurve: homeModel.transitionCurve,
+                      child: TagsView(
+                        key: ValueKey(model.tags.join('_')),
+                        background: box.background,
+                        foreground: box.foreground,
+                        cursorPositionStream: homeModel.cursorPositionStream,
+                        box: box,
+                        fillUpTo: 500,
+                        tags: model.tags,
+                        clickableTags: model.clickableTags,
+                        onTagClicked: (id, text, pos) => model.onTagTap(id, text, pos, (skill) => homeModel.filterProjects(skill)),
+                        initialCursorPosition: model.lastClickPosition,
+                      ),
+                    ),
+                    if (model.selectedSkillCategory != null)
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        child: Hover(
+                          showCursor: true,
+                          child: (h) => GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: model.unselectSkills,
+                            child: Container(
+                              height: isPortrait(context) ? 55 : homeModel.menuButtonSize(context) - Constants.edgeWidth * 2,
+                              padding: const EdgeInsets.only(left: 15, right: 15),
+                              decoration: BoxDecoration(
+                                color: homeModel.foregroundColor,
+                              ),
+                              child: Opacity(
+                                opacity: h ? 0.5 : 1,
+                                child: Center(
+                                  child: Text(
+                                    '<- Categories'.toUpperCase(),
+                                    style: Typos(context).large(color: homeModel.backgroundColor),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 );
               },
             ),

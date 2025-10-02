@@ -50,11 +50,6 @@ class AboutView extends StatelessWidget {
                         image: DecorationImage(
                           image: NetworkImage(model.about?.avatar ?? ''),
                           fit: BoxFit.cover,
-                          onError: (error, stackTrace) {
-                            print('-----');
-                            print(error);
-                            print('-----');
-                          },
                         ),
                       ),
                     )
@@ -96,10 +91,6 @@ class AboutView extends StatelessWidget {
               background: homeModel.backgroundColor,
               foreground: homeModel.foregroundColor,
               boxSize: boxSize,
-              // position: BoxPosition(
-              //   start: Coords(6, 0),
-              //   end: Coords(6, 0),
-              // ),
               item: AboutItems(context).homeButton,
               child: (box) => BoxButton(
                 box: box,
@@ -112,7 +103,7 @@ class AboutView extends StatelessWidget {
                     skewed: hovering,
                     width: box.boxSize,
                     child: Text(
-                      'ACCUEIL',
+                      '/home',
                       style: Typos(context).large(color: homeModel.backgroundColor),
                     ),
                   ),
@@ -138,7 +129,7 @@ class AboutView extends StatelessWidget {
                     skewed: hovering,
                     width: box.boxSize,
                     child: Text(
-                      'COMPETENCES',
+                      '/skills',
                       style: Typos(context).large(color: homeModel.backgroundColor),
                     ),
                   ),
@@ -152,10 +143,6 @@ class AboutView extends StatelessWidget {
               background: homeModel.backgroundColor,
               foreground: homeModel.foregroundColor,
               boxSize: boxSize,
-              // position: BoxPosition(
-              //   start: Coords(3, 3),
-              //   end: Coords(4, 3),
-              // ),
               item: AboutItems(context).wideTriangle,
               child: (box) => Align(
                 alignment: Alignment.centerRight,
@@ -174,10 +161,6 @@ class AboutView extends StatelessWidget {
               background: homeModel.backgroundColor,
               foreground: homeModel.foregroundColor,
               boxSize: boxSize,
-              // position: BoxPosition(
-              //   start: Coords(0, 2),
-              //   end: Coords(0, 2),
-              // ),
               item: AboutItems(context).rotatingTriangle,
               child: (box) => RiveAnimation.asset(
                 'assets/triangle.riv',
@@ -190,10 +173,6 @@ class AboutView extends StatelessWidget {
               boxSize: boxSize,
               background: homeModel.backgroundColor,
               foreground: homeModel.foregroundColor,
-              // position: BoxPosition(
-              //   start: Coords(2, 0),
-              //   end: Coords(4, 2),
-              // ),
               item: AboutItems(context).bio,
               child: (box) => MdViewer(
                 md: model.about?.bio ?? '',
@@ -211,7 +190,7 @@ class AboutView extends StatelessWidget {
                 foreground: homeModel.foregroundColor,
                 item: AboutItems(context).skills,
                 child: (box) {
-                  List<String> tags = model.about?.mainSkills ?? [];
+                  List<String> tags = homeModel.prjs.map((e) => e.techStack).toList().expand((e) => e).toSet().toList();
                   return TagsView(
                     tags: tags,
                     box: box,

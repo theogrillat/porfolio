@@ -35,6 +35,15 @@ class Constants {
     return 20;
   }
 
+  static double sidebarHeight(BuildContext context) {
+    if (isPortrait(context)) return 40;
+    if (Breakpoints(context).isWide()) return 0;
+    if (Breakpoints(context).isDesktop()) return 0;
+    if (Breakpoints(context).isTablet()) return 0;
+    if (Breakpoints(context).isMobile()) return 0;
+    return 0;
+  }
+
   static int yCount(BuildContext context) {
     double w = MediaQuery.of(context).size.width;
     double h = MediaQuery.of(context).size.height;
@@ -71,8 +80,8 @@ class FontSize {
 
     if (isWide) return 18.0;
     if (isDesktop) return 16.0;
-    if (isTablet) return 11.0;
-    if (isMobile) return 9.0;
+    if (isTablet) return 14.0;
+    if (isMobile) return 11.0;
 
     return 18.0;
   }

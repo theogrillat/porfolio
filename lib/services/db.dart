@@ -27,7 +27,13 @@ class DbService {
       CollectionReference ref = db.collection('projects');
       QuerySnapshot snapshot = await ref.get();
       inspect(snapshot.docs);
-      List<Project> projects = snapshot.docs.map((doc) => Project.fromMap(doc.data() as Map<String, dynamic>)).toList();
+      List<Project> projects = snapshot.docs.map((doc) {
+        String id = doc.id;
+        return Project.fromMap({
+          ...doc.data() as Map<String, dynamic>,
+          'id': id,
+        });
+      }).toList();
       return projects;
     } catch (e) {
       print(e);

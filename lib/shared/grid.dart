@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:portfolio/shared/coords.dart';
 import 'package:portfolio/shared/styles.dart';
 import 'package:portfolio/shared/utils.dart';
+import 'package:portfolio/widgets/animated_blur.dart';
 
 class Coords {
   final int x;
@@ -85,8 +86,7 @@ class BoxPosition {
     required BuildContext context,
     required double boxSize,
   }) {
-    return getLeftOffsetFromViewport(context: context, boxSize: boxSize) +
-        width * boxSize;
+    return getLeftOffsetFromViewport(context: context, boxSize: boxSize) + width * boxSize;
   }
 
   double getBottomOffsetFromViewport({
@@ -128,9 +128,9 @@ class Box {
     required BuildContext context,
   }) {
     return position.contains(
-        positionToCheck: positionToCheck,
-        boxSize: boxSize,
-        context: context,
+      positionToCheck: positionToCheck,
+      boxSize: boxSize,
+      context: context,
     );
   }
 }
@@ -139,57 +139,107 @@ class GridBox extends StatelessWidget {
   const GridBox({
     super.key,
     required this.show,
+    this.blur = false,
     required this.transitionDuration,
     required this.transitionCurve,
     required this.boxSize,
-    // required this.position,
     required this.background,
     required this.foreground,
     required this.child,
     required this.item,
+    this.fakeBorders = false,
+    this.extendRight = false,
+    this.extendBottom = false,
+    this.extendLeft = false,
+    this.extendTop = false,
+    this.transparent = false,
   });
 
+  final bool show;
+  final bool blur;
   final double boxSize;
-  // final BoxPosition position;
   final Color background;
   final Color foreground;
   final Function(Box) child;
-  final bool show;
   final Duration transitionDuration;
   final Curve transitionCurve;
   final BoxItem item;
+  final bool fakeBorders;
+  final bool extendRight;
+  final bool extendBottom;
+  final bool extendLeft;
+  final bool extendTop;
+  final bool transparent;
 
   @override
   Widget build(BuildContext context) {
-    double verticalPadding = (MediaQuery.of(context).size.height -
-            boxSize * Constants.yCount(context)) /
-        2;
+    double verticalPadding = (MediaQuery.of(context).size.height - boxSize * Constants.yCount(context)) / 2;
+    double heightPx = boxSize * item.position.height;
+    double widthPx = boxSize * item.position.width;
+
+    double leftPx = item.position.left * boxSize;
+    double topPx = verticalPadding + item.position.top * boxSize;
+
+    double borderWidth = Constants.edgeWidth / 2;
+
+    if (fakeBorders) {
+      if (extendLeft) leftPx -= Constants.edgeWidth / 2;
+      if (extendTop) topPx -= Constants.edgeWidth / 2;
+      widthPx += (extendLeft ? borderWidth : 0) + (extendRight ? borderWidth : 0);
+      heightPx += (extendTop ? borderWidth : 0) + (extendBottom ? borderWidth : 0);
+    }
+
     return Positioned(
-      top: verticalPadding + item.position.top * boxSize,
-      left: item.position.left * boxSize,
-      child: AnimatedOpacity(
-        opacity: show ? 1 : 0,
-        duration: transitionDuration,
-        curve: transitionCurve,
-        child: SizedBox(
-          height: boxSize * item.position.height,
-          width: boxSize * item.position.width,
-          child: AnimatedContainer(
+      top: topPx,
+      left: leftPx,
+      child: IgnorePointer(
+        ignoring: !show && !blur,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOutCubicEmphasized,
+          opacity: blur ? 0 : 1,
+          child: AnimatedOpacity(
+            opacity: show ? 1 : 0,
             duration: transitionDuration,
             curve: transitionCurve,
-            decoration: BoxDecoration(
-              color: background,
-              border: Border.all(
-                width: Constants.edgeWidth / 2,
-                color: foreground,
+            child: SizedBox(
+              height: heightPx,
+              width: widthPx,
+              child: ClipRect(
+                child: AnimatedContainer(
+                  duration: transitionDuration,
+                  curve: transitionCurve,
+                  decoration: BoxDecoration(
+                    color: transparent ? Colors.transparent : background,
+                    border: Border(
+                      top: BorderSide(width: borderWidth * (fakeBorders && extendTop ? 2 : 1), color: foreground),
+                      right: BorderSide(width: borderWidth * (fakeBorders && extendRight ? 2 : 1), color: foreground),
+                      bottom: BorderSide(width: borderWidth * (fakeBorders && extendBottom ? 2 : 1), color: foreground),
+                      left: BorderSide(width: borderWidth * (fakeBorders && extendLeft ? 2 : 1), color: foreground),
+                    ),
+                  ),
+                  child: AnimatedBlur(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOutCubicEmphasized,
+                    blurSigma: 75,
+                    blur: blur,
+                    child: AnimatedScale(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOutCubicEmphasized,
+                      scale: blur ? 1.05 : 1,
+                      child: child(
+                        Box(
+                          position: item.position,
+                          background: background,
+                          foreground: foreground,
+                          boxSize: boxSize,
+                        ),
+                      )
+                    ),
+                  ),
+                ),
               ),
             ),
-            child: child(Box(
-              position: item.position,
-              background: background,
-              foreground: foreground,
-              boxSize: boxSize,
-            )),
           ),
         ),
       ),
