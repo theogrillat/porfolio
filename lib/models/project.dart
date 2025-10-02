@@ -22,11 +22,19 @@ class Project {
     required this.id,
   });
 
+  static List<Screenshot> getScreenshots(dynamic data) {
+    dynamic screenshots = data['screenshots'];
+    if (screenshots == null) return List.generate(4, (i) => Screenshot(url: '', portrait: true));
+    if (screenshots is! List) return List.generate(4, (i) => Screenshot(url: '', portrait: true));
+    if (screenshots.length < 4) return List.generate(4, (i) => Screenshot(url: '', portrait: true));
+    return (screenshots).map((e) => Screenshot.fromMap(e)).toList();
+  }
+
   Project.fromMap(Map<String, dynamic> data)
       : title = data['title'] ?? '',
         description = data['description'] ?? '',
         techStack = (data['techStack'] ?? []).cast<String>(),
-        screenshots = ((data['screenshots'] ?? []) as List<dynamic>).map((e) => Screenshot.fromMap(e as Map<String, dynamic>)).toList(),
+        screenshots = getScreenshots(data),
         background = hex(data['background']),
         foreground = hex(data['foreground']),
         priority = data['priority'] ?? 0,

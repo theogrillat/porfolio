@@ -118,21 +118,21 @@ class MenuView extends StatelessWidget {
                   builder: (context) {
                     List<Project> projects = homeModel.prjs;
                     projects.sort((a, b) => a.priority.compareTo(b.priority));
-                    if (homeModel.filterSkills.isNotEmpty) {
-                      projects.sort((a, b) {
-                        bool aIsPartOfFilter = homeModel.filteredProjects.any((p) => p.id == a.id);
-                        bool bIsPartOfFilter = homeModel.filteredProjects.any((p) => p.id == b.id);
-                        if (aIsPartOfFilter && !bIsPartOfFilter) return -1;
-                        if (!aIsPartOfFilter && bIsPartOfFilter) return 1;
-                        return a.title.compareTo(b.title);
-                      });
-                    }
+                    // if (homeModel.filterSkills.isNotEmpty) {
+                    //   projects.sort((a, b) {
+                    //     bool aIsPartOfFilter = homeModel.filteredProjects.any((p) => p.id == a.id);
+                    //     bool bIsPartOfFilter = homeModel.filteredProjects.any((p) => p.id == b.id);
+                    //     if (aIsPartOfFilter && !bIsPartOfFilter) return -1;
+                    //     if (!aIsPartOfFilter && bIsPartOfFilter) return 1;
+                    //     return a.priority.compareTo(b.priority);
+                    //   });
+                    // }
                     return Expanded(
                       child: ListView.builder(
                         itemCount: projects.length,
                         padding: const EdgeInsets.all(0),
                         itemBuilder: (context, index) {
-                          Project project = homeModel.prjs[index];
+                          Project project = projects[index];
                           bool isSelected = homeModel.currentProject?.id == project.id;
                           bool isPartOfFilter = homeModel.filterSkills.isEmpty ? true : homeModel.filteredProjects.any((p) => p.id == project.id);
                           return Hover(

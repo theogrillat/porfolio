@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/shared/styles.dart';
@@ -81,6 +83,7 @@ class _TagsViewState extends State<TagsView> with SingleTickerProviderStateMixin
             breakpoints: Breakpoints(context),
             hoveredTag: isMobileWebBrowser ? null : model.hoveredTag,
             boxSize: widget.box.boxSize,
+            width: min(widget.box.position.width, widget.box.position.height),
           ),
         ),
       ),
@@ -175,6 +178,7 @@ class OptimizedTagsPainter extends CustomPainter {
   final Breakpoints breakpoints;
   final Tag? hoveredTag;
   final double boxSize;
+  final int width;
 
   static final Map<String, TextPainter> _textPainterCache = {};
 
@@ -190,6 +194,7 @@ class OptimizedTagsPainter extends CustomPainter {
     required this.breakpoints,
     required this.hoveredTag,
     required this.boxSize,
+    required this.width
   });
 
   @override
@@ -247,7 +252,7 @@ class OptimizedTagsPainter extends CustomPainter {
                   color: tag.isClickable ? backgroundColor : textStyle.color?.withValues(alpha: opacity),
                   backgroundColor: tag.isClickable ? foregroundColor : null,
                   decoration: TextDecoration.none,
-                  fontSize: boxSize * 0.03 * 2,
+                  fontSize: boxSize * (width / 2) * 0.03,
                 )
               : textStyle.copyWith(
                   color: isHovered && tag.isClickable ? backgroundColor : textStyle.color?.withValues(alpha: opacity),
@@ -255,7 +260,7 @@ class OptimizedTagsPainter extends CustomPainter {
                   decorationStyle: TextDecorationStyle.dotted,
                   decoration: tag.isClickable && !isHovered ? TextDecoration.underline : null,
                   decorationThickness: 2,
-                  fontSize: boxSize * 0.03 * 2,
+                  fontSize: boxSize * (width / 2) * 0.03,
                 ),
         );
       } else {
@@ -272,7 +277,7 @@ class OptimizedTagsPainter extends CustomPainter {
                   color: tag.isClickable ? backgroundColor : textStyle.color,
                   backgroundColor: tag.isClickable ? foregroundColor : null,
                   decoration: TextDecoration.none,
-                  fontSize: boxSize * 0.03 * 2,
+                  fontSize: boxSize * (width / 2) * 0.03,
                 )
               : textStyle.copyWith(
                   color: isHovered && tag.isClickable ? backgroundColor : textStyle.color,
@@ -280,7 +285,7 @@ class OptimizedTagsPainter extends CustomPainter {
                   decorationStyle: TextDecorationStyle.dotted,
                   decorationThickness: 2,
                   decoration: tag.isClickable && !isHovered ? TextDecoration.underline : null,
-                  fontSize: boxSize * 0.03 * 2,
+                  fontSize: boxSize * (width / 2) * 0.03,
                 ),
         );
         if (_textPainterCache.length > 1000) {

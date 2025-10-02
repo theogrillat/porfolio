@@ -301,54 +301,90 @@ class LandscapeSideBar extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  RotatedBox(
-                    quarterTurns: 1,
-                    child: Row(
-                      children: [
-                        AnimatedDefaultTextStyle(
-                          duration: model.transitionDuration,
-                          curve: model.transitionCurve,
-                          style: Typos(context).regular(
-                            color: model.foregroundColor,
-                          ),
-                          child: Text('vous étes sur '.toUpperCase()),
-                        ),
-                        AnimatedSwitcher(
-                          duration: model.transitionDuration,
-                          child: AnimatedDefaultTextStyle(
+              child: LayoutBuilder(builder: (context, constraints) {
+                final style = Typos(context).regular(
+                  color: model.foregroundColor,
+                );
+
+                final vousEtesSurPainter = TextPainter(
+                  text: TextSpan(text: 'vous étes sur '.toUpperCase(), style: style),
+                  maxLines: 1,
+                  textDirection: TextDirection.ltr,
+                )..layout(minWidth: 0, maxWidth: double.infinity);
+
+                final pageTitlePainter = TextPainter(
+                  text: TextSpan(text: model.pageTitle, style: style),
+                  maxLines: 1,
+                  textDirection: TextDirection.ltr,
+                )..layout(minWidth: 0, maxWidth: double.infinity);
+
+                final topTextWidth = vousEtesSurPainter.width + pageTitlePainter.width;
+
+                final bottomTextPainter = TextPainter(
+                  text: TextSpan(text: 'Théo GRILLAT© ${DateTime.now().year} - Made W/FLUTTER'.toUpperCase(), style: style),
+                  maxLines: 1,
+                  textDirection: TextDirection.ltr,
+                )..layout(minWidth: 0, maxWidth: double.infinity);
+
+                final bottomTextWidth = bottomTextPainter.width;
+
+                // Height of rotated text is width. Add some spacing.
+                final requiredHeight = topTextWidth + bottomTextWidth + 20;
+
+                final canShowBottomText = constraints.maxHeight > requiredHeight;
+
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    RotatedBox(
+                      quarterTurns: 1,
+                      child: Row(
+                        children: [
+                          AnimatedDefaultTextStyle(
                             duration: model.transitionDuration,
                             curve: model.transitionCurve,
                             style: Typos(context).regular(
                               color: model.foregroundColor,
                             ),
-                            child: Text(
-                              model.pageTitle,
-                              key: ValueKey(model.pageTitle),
+                            child: Text('vous étes sur '.toUpperCase()),
+                          ),
+                          AnimatedSwitcher(
+                            duration: model.transitionDuration,
+                            child: AnimatedDefaultTextStyle(
+                              duration: model.transitionDuration,
+                              curve: model.transitionCurve,
+                              style: Typos(context).regular(
+                                color: model.foregroundColor,
+                              ),
+                              child: Text(
+                                model.pageTitle,
+                                key: ValueKey(model.pageTitle),
+                              ),
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                    if (canShowBottomText)
+                      RotatedBox(
+                        quarterTurns: 1,
+                        child: AnimatedDefaultTextStyle(
+                          duration: model.transitionDuration,
+                          curve: model.transitionCurve,
+                          style: Typos(context).regular(
+                            color: model.foregroundColor,
+                          ),
+                          child: Text(
+                            'Théo GRILLAT© ${DateTime.now().year} - Made W/FLUTTER'.toUpperCase(),
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                  RotatedBox(
-                    quarterTurns: 1,
-                    child: AnimatedDefaultTextStyle(
-                      duration: model.transitionDuration,
-                      curve: model.transitionCurve,
-                      style: Typos(context).regular(
-                        color: model.foregroundColor,
-                      ),
-                      child: Text(
-                        'Théo GRILLAT© ${DateTime.now().year} - Made W/FLUTTER'.toUpperCase(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                      )
+                    else
+                      const SizedBox.shrink(),
+                  ],
+                );
+              }),
             ),
           ],
         ),
