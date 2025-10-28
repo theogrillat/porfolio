@@ -25,7 +25,7 @@ class DbService {
   Future<List<Project>> getAllProjects() async {
     try {
       CollectionReference ref = db.collection('projects');
-      QuerySnapshot snapshot = await ref.get();
+      QuerySnapshot snapshot = await ref.where('isPublic', isEqualTo: true).get();
       inspect(snapshot.docs);
       List<Project> projects = snapshot.docs.map((doc) {
         String id = doc.id;

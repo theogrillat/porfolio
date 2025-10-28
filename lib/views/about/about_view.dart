@@ -4,8 +4,10 @@ import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/shared/styles.dart';
 import 'package:portfolio/views/home/home_viewmodel.dart';
 import 'package:portfolio/widgets/animated_skew.dart';
+import 'package:portfolio/widgets/box_action.dart';
 import 'package:portfolio/widgets/boxbutton.dart';
 import 'package:portfolio/widgets/cloud/cloud_view.dart';
+import 'package:portfolio/widgets/hover.dart';
 import 'package:portfolio/widgets/md_viewer.dart';
 import 'package:portfolio/widgets/pressure/pressure_view.dart';
 import 'package:portfolio/widgets/tags/tags_view.dart';
@@ -37,7 +39,7 @@ class AboutView extends StatelessWidget {
         return Stack(
           children: [
             GridBox(
-              show: homeModel.currentGridIndex >= 1,
+              show: homeModel.currentGridIndex >= 1 && model.noExpanded,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
@@ -56,7 +58,7 @@ class AboutView extends StatelessWidget {
                   : const SizedBox.shrink(),
             ),
             GridBox(
-              show: homeModel.currentGridIndex >= 2,
+              show: homeModel.currentGridIndex >= 2 && model.noExpanded,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               background: homeModel.backgroundColor,
@@ -85,7 +87,7 @@ class AboutView extends StatelessWidget {
               },
             ),
             GridBox(
-              show: homeModel.currentGridIndex >= 3,
+              show: homeModel.currentGridIndex >= 3 && model.noExpanded,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               background: homeModel.backgroundColor,
@@ -111,7 +113,7 @@ class AboutView extends StatelessWidget {
               ),
             ),
             GridBox(
-              show: homeModel.currentGridIndex >= 4,
+              show: homeModel.currentGridIndex >= 4 && model.noExpanded,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               background: homeModel.backgroundColor,
@@ -137,7 +139,7 @@ class AboutView extends StatelessWidget {
               ),
             ),
             GridBox(
-              show: homeModel.currentGridIndex >= 5,
+              show: homeModel.currentGridIndex >= 5 && model.noExpanded,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               background: homeModel.backgroundColor,
@@ -155,7 +157,7 @@ class AboutView extends StatelessWidget {
               ),
             ),
             GridBox(
-              show: homeModel.currentGridIndex >= 6,
+              show: homeModel.currentGridIndex >= 6 && model.noExpanded,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               background: homeModel.backgroundColor,
@@ -167,22 +169,37 @@ class AboutView extends StatelessWidget {
               ),
             ),
             GridBox(
-              show: homeModel.currentGridIndex >= 7,
+              show: homeModel.currentGridIndex >= 7 && (model.noExpanded || model.bioExpanded),
+              expanded: model.bioExpanded,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
               background: homeModel.backgroundColor,
               foreground: homeModel.foregroundColor,
               item: AboutItems(context).bio,
-              child: (box) => MdViewer(
-                md: model.about?.bio ?? '',
-                background: homeModel.backgroundColor,
-                foreground: homeModel.foregroundColor,
+              child: (box) => Hover(
+                child: (h) => Stack(
+                  children: [
+                    MdViewer(
+                      md: model.about?.bio ?? '',
+                      background: homeModel.backgroundColor,
+                      foreground: homeModel.foregroundColor,
+                    ),
+                    BoxAction(
+                      label: model.bioExpanded ? 'réduire ><' : 'agrandir <>',
+                      h: h,
+                      onTap: () => model.toggleBio(),
+                      background: box.background,
+                      foreground: box.foreground,
+                    ),
+                  ],
+                ),
               ),
             ),
             if (model.about != null)
               GridBox(
-                show: homeModel.currentGridIndex >= 8,
+                show: homeModel.currentGridIndex >= 8 && (model.noExpanded || model.skillsExpanded),
+                expanded: model.skillsExpanded,
                 transitionDuration: homeModel.transitionDuration,
                 transitionCurve: homeModel.transitionCurve,
                 boxSize: boxSize,
@@ -191,13 +208,29 @@ class AboutView extends StatelessWidget {
                 item: AboutItems(context).skills,
                 child: (box) {
                   List<String> tags = homeModel.prjs.map((e) => e.techStack).toList().expand((e) => e).toSet().toList();
-                  return TagsView(
-                    tags: tags,
-                    box: box,
-                    cursorPositionStream: homeModel.cursorPositionStream,
-                    background: box.background,
-                    foreground: box.foreground,
-                    fillUpTo: 0,
+                  return Hover(
+                    child: (h) => Stack(
+                      children: [
+                        Center(
+                          child: TagsView(
+                            key: ValueKey('cloud_${homeModel.prjs.map((e) => e.title).join('_')}_${model.skillsExpanded ? 'expanded' : 'collapsed'}_${tags.join('_')}'),
+                            tags: tags,
+                            box: box,
+                            cursorPositionStream: homeModel.cursorPositionStream,
+                            background: box.background,
+                            foreground: box.foreground,
+                            fillUpTo: 0,
+                          ),
+                        ),
+                        BoxAction(
+                          label: model.skillsExpanded ? 'réduire ><' : 'agrandir <>',
+                          h: h,
+                          onTap: () => model.toggleSkills(),
+                          background: box.background,
+                          foreground: box.foreground,
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),

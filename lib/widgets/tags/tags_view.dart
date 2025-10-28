@@ -250,7 +250,7 @@ class OptimizedTagsPainter extends CustomPainter {
           style: isMobileWebBrowser
               ? textStyle.copyWith(
                   color: tag.isClickable ? backgroundColor : textStyle.color?.withValues(alpha: opacity),
-                  backgroundColor: tag.isClickable ? foregroundColor : null,
+                  backgroundColor: tag.isClickable ? foregroundColor.withValues(alpha: opacity) : null,
                   decoration: TextDecoration.none,
                   fontSize: boxSize * (width / 2) * 0.03,
                 )
@@ -264,8 +264,8 @@ class OptimizedTagsPainter extends CustomPainter {
                 ),
         );
       } else {
-        final cacheKey = '${tag.text}_${textStyle.hashCode}_foreground_$foregroundColor';
-        textPainter = _textPainterCache[cacheKey] ??= _createTextPainter(
+        // final cacheKey = '${tag.text}_${textStyle.hashCode}_foreground_${foregroundColor}_background_${backgroundColor}_opacity_${opacity}_isClickable_${tag.isClickable}_isHovered_${isHovered}';
+        textPainter = _createTextPainter(
           isClickable: tag.isClickable,
           isHovered: isHovered,
           text: tag.text,

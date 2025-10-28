@@ -164,7 +164,7 @@ class LandingView extends StatelessWidget {
                 skewed: hovering,
                 width: box.boxSize,
                 child: Text(
-                  '/me',
+                  '/profile',
                   style: Typos(context).large(color: model.backgroundColor),
                 ),
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:portfolio/models/about.dart';
 import 'package:portfolio/models/project.dart';
+import 'package:portfolio/services/analytics.dart';
 import 'package:portfolio/services/db.dart';
 import 'package:stacked/stacked.dart';
 
@@ -9,6 +10,12 @@ import 'package:stacked/stacked.dart';
 // ============================================================================
 
 class SkillsViewModel extends BaseViewModel {
+  // ============================================================================
+  // SERVICES
+  // ============================================================================
+
+  final AnalyticsService _anal = AnalyticsService.instance;
+
   // ============================================================================
   // PROPERTIES
   // ============================================================================
@@ -56,6 +63,7 @@ class SkillsViewModel extends BaseViewModel {
   void setSelectedSkills(SkillCategory skillCategory) {
     _selectedSkillCategory = skillCategory;
     notifyListeners();
+    _anal.logTagClicked(skillCategory.name, TagType.category);
   }
 
   bool isClickable(String skill) {
@@ -67,6 +75,7 @@ class SkillsViewModel extends BaseViewModel {
   void unselectSkills() {
     _selectedSkillCategory = null;
     notifyListeners();
+    _anal.logTagClicked('', TagType.category);
   }
 
   // ============================================================================
@@ -89,6 +98,7 @@ class SkillsViewModel extends BaseViewModel {
       List<Project> projects = _prjs.where((e) => e.techStack.contains(text)).toList();
       if (projects.isNotEmpty) {
         print('Projects found: ${projects.length}');
+        _anal.logTagClicked(text, TagType.filter);
         filterProjects(text);
       }
     } else {

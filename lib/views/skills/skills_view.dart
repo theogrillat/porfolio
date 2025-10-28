@@ -104,9 +104,9 @@ class SkillsView extends StatelessWidget {
                 return Stack(
                   children: [
                     AnimatedSwitcher(
-                      duration: homeModel.transitionDuration,
-                      switchInCurve: homeModel.transitionCurve,
-                      switchOutCurve: homeModel.transitionCurve,
+                      duration: const Duration(milliseconds: 250),
+                      switchInCurve: Curves.easeInCubic,
+                      switchOutCurve: Curves.easeOutCubic,
                       child: TagsView(
                         key: ValueKey(model.tags.join('_')),
                         background: box.background,
@@ -130,7 +130,7 @@ class SkillsView extends StatelessWidget {
                             behavior: HitTestBehavior.opaque,
                             onTap: model.unselectSkills,
                             child: Container(
-                              height: isPortrait(context) ? 55 : homeModel.menuButtonSize(context) - Constants.edgeWidth * 2,
+                              height: isPortrait(context) ? 55 : homeModel.menuButtonSize(context) - Constants.edgeWidth(context) * 2,
                               padding: const EdgeInsets.only(left: 15, right: 15),
                               decoration: BoxDecoration(
                                 color: homeModel.foregroundColor,

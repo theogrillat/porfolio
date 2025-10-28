@@ -187,3 +187,43 @@ bool get isMobileWebBrowser {
 bool get isDesktopWebBrowser {
   return ui_web.BrowserDetection.instance.isDesktop;
 }
+
+Future<void> wait(int milliseconds) async {
+  await Future.delayed(Duration(milliseconds: milliseconds));
+}
+
+Future<void> waitUntil(bool Function() condition) async {
+  while (!condition()) {
+    await wait(100);
+  }
+}
+
+List<double> divideByCurve({
+  required int stepCount,
+  required Curve curve,
+}) {
+  if (stepCount <= 0) return [];
+  if (stepCount == 1) return [1.0];
+
+  return List.generate(stepCount, (i) {
+    final t1 = curve.transform(i / stepCount);
+    final t2 = curve.transform((i + 1) / stepCount);
+    return t2 - t1;
+  });
+}
+
+List<Duration> curveToDuration({
+  required Duration duration,
+  required int stepCount,
+  Curve? curve,
+}) {
+  // Get proportions
+  final proportions = divideByCurve(
+    stepCount: stepCount,
+    curve: curve ?? Curves.easeInOut,
+  );
+
+  // Convert to whatever you need
+  final durations = proportions.map((p) => Duration(microseconds: (p * duration.inMicroseconds).round())).toList();
+  return durations;
+}

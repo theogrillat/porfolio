@@ -10,6 +10,7 @@ class Project {
   final Color foreground;
   final int priority;
   final String id;
+  final bool isPublic;
 
   Project({
     required this.title,
@@ -20,13 +21,14 @@ class Project {
     required this.foreground,
     this.priority = 0,
     required this.id,
+    this.isPublic = true,
   });
 
   static List<Screenshot> getScreenshots(dynamic data) {
     dynamic screenshots = data['screenshots'];
-    if (screenshots == null) return List.generate(4, (i) => Screenshot(url: '', portrait: true));
-    if (screenshots is! List) return List.generate(4, (i) => Screenshot(url: '', portrait: true));
-    if (screenshots.length < 4) return List.generate(4, (i) => Screenshot(url: '', portrait: true));
+    if (screenshots == null) return List.generate(4, (i) => Screenshot(url: '', landscape: false));
+    if (screenshots is! List) return List.generate(4, (i) => Screenshot(url: '', landscape: false));
+    if (screenshots.length < 4) return List.generate(4, (i) => Screenshot(url: '', landscape: false));
     return (screenshots).map((e) => Screenshot.fromMap(e)).toList();
   }
 
@@ -38,7 +40,8 @@ class Project {
         background = hex(data['background']),
         foreground = hex(data['foreground']),
         priority = data['priority'] ?? 0,
-        id = data['id'] ?? '';
+        id = data['id'] ?? '',
+        isPublic = data['isPublic'] ?? true;
 
   Map<String, dynamic> toMap() {
     return {
@@ -50,27 +53,28 @@ class Project {
       'foreground': foreground.value.toRadixString(16),
       'priority': priority,
       'id': id,
+      'isPublic': isPublic,
     };
   }
 }
 
 class Screenshot {
   final String url;
-  final bool portrait;
+  final bool landscape;
 
   Screenshot({
     required this.url,
-    this.portrait = true,
+    this.landscape = false,
   });
 
   Screenshot.fromMap(Map<String, dynamic> data)
       : url = data['url'] ?? '',
-        portrait = data['portrait'] ?? true;
+        landscape = !(data['portrait'] ?? true);
 
   Map<String, dynamic> toMap() {
     return {
       'url': url,
-      'portrait': portrait,
+      'portrait': !landscape,
     };
   }
 }

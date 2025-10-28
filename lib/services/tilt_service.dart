@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:js_interop';
+import 'package:portfolio/services/analytics.dart';
 import 'package:web/web.dart' as web;
 
 /// JavaScript global checks
@@ -61,6 +62,12 @@ class TiltConfig {
 /// Automatically adjusts tilt axis based on device orientation (portrait/landscape)
 /// Returns null if tilt is not supported
 class TiltService {
+  // ============================================================================
+  // SERVICES
+  // ============================================================================
+
+  final AnalyticsService _anal = AnalyticsService.instance;
+
   // ============================================================================
   // SINGLETON PATTERN
   // ============================================================================
@@ -179,6 +186,12 @@ class TiltService {
   Future<String> checkPermissionStatus() async {
     if (!_hasRequestPermissionMethod()) {
       _permissionStatus = 'granted'; // No permission needed on older systems
+      _anal.logEvent(
+        name: 'tilt_permission_status_check',
+        parameters: {
+          'result': 'granted (no permission needed)',
+        },
+      );
       return 'granted';
     }
 
@@ -207,9 +220,21 @@ class TiltService {
       if (eventsReceived) {
         _permissionStatus = 'granted';
         print('TiltService: Permission status determined: granted');
+        _anal.logEvent(
+          name: 'tilt_permission_status_check',
+          parameters: {
+            'result': 'granted',
+          },
+        );
         testCompleter.complete('granted');
       } else {
         _permissionStatus = 'unknown';
+        _anal.logEvent(
+          name: 'tilt_permission_status_check',
+          parameters: {
+            'result': 'unknown',
+          },
+        );
         print('TiltService: Permission status determined: unknown (no events received)');
         testCompleter.complete('unknown');
       }
@@ -230,6 +255,13 @@ class TiltService {
       _permissionStatus = result ? 'granted' : 'denied';
       _hasTestedPermission = true;
 
+      _anal.logEvent(
+        name: 'tilt_permission_requested',
+        parameters: {
+          'permission': result ? 'granted' : 'denied',
+        },
+      );
+
       if (result && !_isSupported) {
         // If permission was granted and service wasn't supported before, try to initialize
         print('TiltService: Permission granted, reinitializing...');
@@ -240,6 +272,12 @@ class TiltService {
       return result;
     } catch (e) {
       print('TiltService: Manual permission request failed: $e');
+      _anal.logEvent(
+        name: 'tilt_permission_request_failed',
+        parameters: {
+          'error': e.toString(),
+        },
+      );
       return false;
     }
   }

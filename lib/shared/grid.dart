@@ -139,6 +139,7 @@ class GridBox extends StatelessWidget {
   const GridBox({
     super.key,
     required this.show,
+    this.expanded = false,
     this.blur = false,
     required this.transitionDuration,
     required this.transitionCurve,
@@ -147,12 +148,13 @@ class GridBox extends StatelessWidget {
     required this.foreground,
     required this.child,
     required this.item,
-    this.fakeBorders = false,
-    this.extendRight = false,
-    this.extendBottom = false,
-    this.extendLeft = false,
-    this.extendTop = false,
+    this.fakeBorders = true,
+    this.extendRight = true,
+    this.extendBottom = true,
+    this.extendLeft = true,
+    this.extendTop = true,
     this.transparent = false,
+    this.topPadding,
   });
 
   final bool show;
@@ -170,26 +172,32 @@ class GridBox extends StatelessWidget {
   final bool extendLeft;
   final bool extendTop;
   final bool transparent;
+  final bool expanded;
+  final double? topPadding;
 
   @override
   Widget build(BuildContext context) {
-    double verticalPadding = (MediaQuery.of(context).size.height - boxSize * Constants.yCount(context)) / 2;
-    double heightPx = boxSize * item.position.height;
-    double widthPx = boxSize * item.position.width;
+    BoxPosition position = expanded && item.position.hasFullscreen ? item.position.fullscreen! : item.position.postition;
+    // Use provided topPadding if available, otherwise calculate fresh (for backwards compatibility)
+    double verticalPadding = topPadding ?? (MediaQuery.of(context).size.height - boxSize * Constants.yCount(context)) / 2;
+    double heightPx = boxSize * position.height;
+    double widthPx = boxSize * position.width;
 
-    double leftPx = item.position.left * boxSize;
-    double topPx = verticalPadding + item.position.top * boxSize;
+    double leftPx = position.left * boxSize;
+    double topPx = verticalPadding + position.top * boxSize;
 
-    double borderWidth = Constants.edgeWidth / 2;
+    double borderWidth = Constants.edgeWidth(context) / 2;
 
     if (fakeBorders) {
-      if (extendLeft) leftPx -= Constants.edgeWidth / 2;
-      if (extendTop) topPx -= Constants.edgeWidth / 2;
+      if (extendLeft) leftPx -= Constants.edgeWidth(context) / 2;
+      if (extendTop) topPx -= Constants.edgeWidth(context) / 2;
       widthPx += (extendLeft ? borderWidth : 0) + (extendRight ? borderWidth : 0);
       heightPx += (extendTop ? borderWidth : 0) + (extendBottom ? borderWidth : 0);
     }
 
-    return Positioned(
+    return AnimatedPositioned(
+      duration: transitionDuration,
+      curve: transitionCurve,
       top: topPx,
       left: leftPx,
       child: IgnorePointer(
@@ -202,7 +210,9 @@ class GridBox extends StatelessWidget {
             opacity: show ? 1 : 0,
             duration: transitionDuration,
             curve: transitionCurve,
-            child: SizedBox(
+            child: AnimatedContainer(
+              duration: transitionDuration,
+              curve: transitionCurve,
               height: heightPx,
               width: widthPx,
               child: ClipRect(
@@ -224,18 +234,17 @@ class GridBox extends StatelessWidget {
                     blurSigma: 75,
                     blur: blur,
                     child: AnimatedScale(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOutCubicEmphasized,
-                      scale: blur ? 1.05 : 1,
-                      child: child(
-                        Box(
-                          position: item.position,
-                          background: background,
-                          foreground: foreground,
-                          boxSize: boxSize,
-                        ),
-                      )
-                    ),
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOutCubicEmphasized,
+                        scale: blur ? 1.05 : 1,
+                        child: child(
+                          Box(
+                            position: position,
+                            background: background,
+                            foreground: foreground,
+                            boxSize: boxSize,
+                          ),
+                        )),
                   ),
                 ),
               ),

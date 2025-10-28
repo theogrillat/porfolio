@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:portfolio/models/project.dart';
 import 'package:portfolio/shared/coords.dart';
 import 'package:portfolio/shared/extensions.dart';
 import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/shared/styles.dart';
+import 'package:portfolio/shared/utils.dart';
 import 'package:portfolio/views/home/home_viewmodel.dart';
 import 'package:portfolio/views/project/project_viewmodel.dart';
 import 'package:portfolio/widgets/animated_skew.dart';
+import 'package:portfolio/widgets/box_action.dart';
 import 'package:portfolio/widgets/boxbutton.dart';
+import 'package:portfolio/widgets/display.dart';
+import 'package:portfolio/widgets/hover.dart';
 import 'package:portfolio/widgets/md_viewer.dart';
 import 'package:portfolio/widgets/pressure/pressure_view.dart';
 import 'package:portfolio/widgets/tags/tags_view.dart';
@@ -35,8 +40,9 @@ class ProjectView extends StatelessWidget {
         return Stack(
           children: [
             GridBox(
-                show: homeModel.currentGridIndex >= 1,
+                show: homeModel.currentGridIndex >= 1 && (model.noExpanded || model.tagsExpanded),
                 blur: homeModel.blurPage,
+                expanded: model.tagsExpanded,
                 transitionDuration: homeModel.transitionDuration,
                 transitionCurve: homeModel.transitionCurve,
                 boxSize: boxSize,
@@ -44,33 +50,32 @@ class ProjectView extends StatelessWidget {
                 background: project.background,
                 foreground: project.foreground,
                 child: (box) {
-                  // print('tags: t.techStack: ${project.techStack}');
-                  return TagsView(
-                    key: ValueKey('cloud_${project.title}_${project.techStack.join('_')}'),
-                    tags: project.techStack,
-                    box: box,
-                    cursorPositionStream: homeModel.cursorPositionStream,
-                    foreground: project.foreground,
-                    background: project.background,
+                  return Hover(
+                    child: (h) => Stack(
+                      children: [
+                        Center(
+                          child: TagsView(
+                            key: ValueKey('cloud_${project.title}_${model.tagsExpanded ? 'expanded' : 'collapsed'}_${project.techStack.join('_')}'),
+                            tags: project.techStack,
+                            box: box,
+                            cursorPositionStream: homeModel.cursorPositionStream,
+                            foreground: project.foreground,
+                            background: project.background,
+                          ),
+                        ),
+                        BoxAction(
+                          label: model.tagsExpanded ? 'réduire ><' : 'agrandir <>',
+                          h: h,
+                          onTap: () => model.toggleTags(),
+                          background: project.background,
+                          foreground: project.foreground,
+                        ),
+                      ],
+                    ),
                   );
                 }),
             GridBox(
-              show: homeModel.currentGridIndex >= 2,
-              blur: homeModel.blurPage,
-              transitionDuration: homeModel.transitionDuration,
-              transitionCurve: homeModel.transitionCurve,
-              boxSize: boxSize,
-              item: ProjectItems(context).description,
-              background: project.background,
-              foreground: project.foreground,
-              child: (box) => MdViewer(
-                md: project.description,
-                foreground: project.foreground,
-                background: project.background,
-              ),
-            ),
-            GridBox(
-              show: homeModel.currentGridIndex >= 3,
+              show: homeModel.currentGridIndex >= 3 && model.noExpanded,
               blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
@@ -104,18 +109,20 @@ class ProjectView extends StatelessWidget {
             GridBox(
               background: project.background,
               foreground: project.foreground,
-              show: homeModel.currentGridIndex >= 4 && !homeModel.isFirstProject,
+              show: homeModel.currentGridIndex >= 4 && !homeModel.isFirstProject && model.noExpanded,
               blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              // position: position,
               item: ProjectItems(context).previousButton,
               child: (box) => BoxButton(
                 box: box,
                 mousePositionStream: homeModel.cursorPositionStream,
                 onHovering: homeModel.onHovering,
-                onTap: () => homeModel.previousProject(),
+                onTap: () {
+                  model.collapseAll();
+                  homeModel.previousProject();
+                },
                 invert: false,
                 child: (hovering) => Center(
                   child: AnimatedSkew(
@@ -133,18 +140,20 @@ class ProjectView extends StatelessWidget {
             GridBox(
               background: project.background,
               foreground: project.foreground,
-              show: homeModel.currentGridIndex >= 5 && !homeModel.isLastProject,
+              show: homeModel.currentGridIndex >= 5 && !homeModel.isLastProject && model.noExpanded,
               blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              // position: position,
               item: ProjectItems(context).nextButton,
               child: (box) => BoxButton(
                 box: box,
                 mousePositionStream: homeModel.cursorPositionStream,
                 onHovering: homeModel.onHovering,
-                onTap: () => homeModel.nextProject(),
+                onTap: () {
+                  model.collapseAll();
+                  homeModel.nextProject();
+                },
                 invert: false,
                 child: (hovering) => Center(
                   child: AnimatedSkew(
@@ -162,7 +171,7 @@ class ProjectView extends StatelessWidget {
             GridBox(
               background: project.background,
               foreground: project.foreground,
-              show: homeModel.currentGridIndex >= 6,
+              show: homeModel.currentGridIndex >= 6 && model.noExpanded,
               blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
@@ -172,7 +181,10 @@ class ProjectView extends StatelessWidget {
                 box: box,
                 mousePositionStream: homeModel.cursorPositionStream,
                 onHovering: homeModel.onHovering,
-                onTap: () => homeModel.goToHome(),
+                onTap: () {
+                  model.collapseAll();
+                  homeModel.goToHome();
+                },
                 invert: true,
                 child: (hovering) => Center(
                   child: AnimatedSkew(
@@ -190,55 +202,107 @@ class ProjectView extends StatelessWidget {
               background: project.background,
               foreground: project.foreground,
               key: ValueKey('screenshot_0_${project.screenshots[0].url}'),
-              show: homeModel.currentGridIndex >= 7,
+              show: homeModel.currentGridIndex >= 7 && model.noExpanded,
               blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              item: ProjectItems(context).screenshot(0),
+              item: ProjectItems(context).screenshot(0, project.screenshots.map((e) => e.landscape).toList()),
               child: (box) => ProjectScreenshot(
                 url: project.screenshots[0].url,
                 box: box,
                 onTap: model.openScreenshot,
+                index: 0,
               ),
             ),
             GridBox(
               background: project.background,
               foreground: project.foreground,
               key: ValueKey('screenshot_1_${project.screenshots[1].url}'),
-              show: homeModel.currentGridIndex >= 8,
+              show: homeModel.currentGridIndex >= 8 && model.noExpanded,
               blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              item: ProjectItems(context).screenshot(1),
-              child: (box) => ProjectScreenshot(url: project.screenshots[1].url, box: box, onTap: model.openScreenshot),
+              item: ProjectItems(context).screenshot(1, project.screenshots.map((e) => e.landscape).toList()),
+              child: (box) => ProjectScreenshot(
+                url: project.screenshots[1].url,
+                box: box,
+                onTap: model.openScreenshot,
+                index: 1,
+              ),
             ),
             GridBox(
               background: project.background,
               foreground: project.foreground,
               key: ValueKey('screenshot_2_${project.screenshots[2].url}'),
-              show: homeModel.currentGridIndex >= 9,
+              show: homeModel.currentGridIndex >= 9 && model.noExpanded,
               blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              item: ProjectItems(context).screenshot(2),
-              child: (box) => ProjectScreenshot(url: project.screenshots[2].url, box: box, onTap: model.openScreenshot),
+              item: ProjectItems(context).screenshot(2, project.screenshots.map((e) => e.landscape).toList()),
+              child: (box) => ProjectScreenshot(
+                url: project.screenshots[2].url,
+                box: box,
+                onTap: model.openScreenshot,
+                index: 2,
+              ),
             ),
             GridBox(
               background: project.background,
               foreground: project.foreground,
               key: ValueKey('screenshot_3_${project.screenshots[3].url}'),
-              show: homeModel.currentGridIndex >= 10,
+              show: homeModel.currentGridIndex >= 10 && model.noExpanded,
               blur: homeModel.blurPage,
               transitionDuration: homeModel.transitionDuration,
               transitionCurve: homeModel.transitionCurve,
               boxSize: boxSize,
-              item: ProjectItems(context).screenshot(3),
-              child: (box) => ProjectScreenshot(url: project.screenshots[3].url, box: box, onTap: model.openScreenshot),
+              item: ProjectItems(context).screenshot(3, project.screenshots.map((e) => e.landscape).toList()),
+              child: (box) => ProjectScreenshot(
+                url: project.screenshots[3].url,
+                box: box,
+                onTap: model.openScreenshot,
+                index: 3,
+              ),
+            ),
+            GridBox(
+              show: homeModel.currentGridIndex >= 2 && (model.noExpanded || model.descriptionExpanded),
+              blur: homeModel.blurPage,
+              expanded: model.descriptionExpanded,
+              transitionDuration: homeModel.transitionDuration,
+              transitionCurve: homeModel.transitionCurve,
+              boxSize: boxSize,
+              item: ProjectItems(context).description,
+              background: project.background,
+              foreground: project.foreground,
+              fakeBorders: true,
+              extendRight: true,
+              extendLeft: true,
+              extendBottom: true,
+              extendTop: true,
+              child: (box) => Hover(
+                showCursor: false,
+                child: (h) => Stack(
+                  children: [
+                    MdViewer(
+                      md: project.description,
+                      foreground: project.foreground,
+                      background: project.background,
+                    ),
+                    BoxAction(
+                      label: model.descriptionExpanded ? 'réduire ><' : 'agrandir <>',
+                      h: h,
+                      onTap: () => model.toggleDescription(),
+                      background: project.background,
+                      foreground: project.foreground,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
+          // ]..sort((a, b) => (a as GridBox).expanded ? 1 : -1),
         );
       },
     );
@@ -251,15 +315,18 @@ class ProjectScreenshot extends StatelessWidget {
     required this.url,
     required this.box,
     required this.onTap,
+    required this.index,
   });
 
   final String url;
   final Box box;
-  final Function(BuildContext context, String url, Box box) onTap;
+  final Function(BuildContext context, int index, Box box) onTap;
+  final int index;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => onTap(context, url, box),
+      onTap: () => onTap(context, index, box),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: ProjectScreenshopImage(url: url, box: box),
@@ -281,24 +348,27 @@ class ProjectScreenshopImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url.isEmpty) return Container();
-    return Hero(
-      tag: url,
-      child: Image.network(
-        key: ValueKey('img_0_$url'),
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: box.background,
-            child: Center(
-              child: Icon(
-                Icons.broken_image,
-                color: box.foreground,
-                size: 50,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Hero(
+        tag: url,
+        child: Image.network(
+          key: ValueKey('img_0_$url'),
+          url,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: box.background,
+              child: Center(
+                child: Icon(
+                  Icons.broken_image,
+                  color: box.foreground,
+                  size: 50,
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

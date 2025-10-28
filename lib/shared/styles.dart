@@ -16,7 +16,15 @@ class Constants {
   static int mobileYCount = 7;
   static int mobileXCount = 4;
   // common
-  static double edgeWidth = 4;
+  // static double edgeWidth = 4;
+  static double edgeWidth(BuildContext context) {
+    double val = 4;
+    if (Breakpoints(context).isWide()) val = 4;
+    if (Breakpoints(context).isDesktop()) val = 4;
+    if (Breakpoints(context).isTablet()) val = 2;
+    if (Breakpoints(context).isMobile()) val = 2;
+    return val;
+  }
   static double mainPadding(BuildContext context) {
     double val = 10;
     if (Breakpoints(context).isWide()) val = 80;

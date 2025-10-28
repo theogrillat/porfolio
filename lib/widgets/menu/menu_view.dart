@@ -41,7 +41,7 @@ class MenuView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  height: isPortrait(context) ? 55 : homeModel.menuButtonSize(context) - Constants.edgeWidth * 2,
+                  height: isPortrait(context) ? 55 : homeModel.menuButtonSize(context) - Constants.edgeWidth(context) * 2,
                   padding: const EdgeInsets.only(left: 25),
                   child: Align(
                     alignment: Alignment.centerLeft,
@@ -58,7 +58,7 @@ class MenuView extends StatelessWidget {
                             child: (h) => GestureDetector(
                               onTap: () => homeModel.clearFilter(),
                               child: Container(
-                                height: isPortrait(context) ? 55 : homeModel.menuButtonSize(context) - Constants.edgeWidth * 2,
+                                height: isPortrait(context) ? 55 : homeModel.menuButtonSize(context) - Constants.edgeWidth(context) * 2,
                                 padding: const EdgeInsets.only(left: 15, right: 15),
                                 decoration: BoxDecoration(
                                   color: h ? homeModel.foregroundColor : Colors.transparent,
@@ -72,10 +72,10 @@ class MenuView extends StatelessWidget {
                                           child: Text(
                                             'CLEAR FILTER',
                                             style: Typos(context).large(color: homeModel.foregroundColor).copyWith(
-                                              decoration: TextDecoration.underline,
-                                              decorationThickness: 2,
-                                              decorationStyle: TextDecorationStyle.dotted,
-                                            ),
+                                                  decoration: TextDecoration.underline,
+                                                  decorationThickness: 2,
+                                                  decorationStyle: TextDecorationStyle.dotted,
+                                                ),
                                             textAlign: TextAlign.center,
                                           ),
                                         ),
@@ -111,89 +111,90 @@ class MenuView extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  height: Constants.edgeWidth,
+                  height: Constants.edgeWidth(context),
                   color: homeModel.foregroundColor,
                 ),
-                Builder(
-                  builder: (context) {
-                    List<Project> projects = homeModel.prjs;
-                    projects.sort((a, b) => a.priority.compareTo(b.priority));
-                    // if (homeModel.filterSkills.isNotEmpty) {
-                    //   projects.sort((a, b) {
-                    //     bool aIsPartOfFilter = homeModel.filteredProjects.any((p) => p.id == a.id);
-                    //     bool bIsPartOfFilter = homeModel.filteredProjects.any((p) => p.id == b.id);
-                    //     if (aIsPartOfFilter && !bIsPartOfFilter) return -1;
-                    //     if (!aIsPartOfFilter && bIsPartOfFilter) return 1;
-                    //     return a.priority.compareTo(b.priority);
-                    //   });
-                    // }
-                    return Expanded(
-                      child: ListView.builder(
-                        itemCount: projects.length,
-                        padding: const EdgeInsets.all(0),
-                        itemBuilder: (context, index) {
-                          Project project = projects[index];
-                          bool isSelected = homeModel.currentProject?.id == project.id;
-                          bool isPartOfFilter = homeModel.filterSkills.isEmpty ? true : homeModel.filteredProjects.any((p) => p.id == project.id);
-                          return Hover(
-                            showCursor: true,
-                            child: (h) => GestureDetector(
-                              onTap: () => homeModel.goToThisProject(project),
-                              child: Opacity(
-                                opacity: isPartOfFilter || h ? 1 : 0.3,
-                                child: Container(
-                                  height: 75 - Constants.edgeWidth,
-                                  padding: EdgeInsets.only(left: 25, right: h ? 25 : 0),
-                                  decoration: BoxDecoration(
-                                    color: h ? homeModel.foregroundColor : Colors.transparent,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      if (homeModel.anyProjectIsSelected)
-                                        Padding(
-                                          padding: const EdgeInsets.only(right: 10),
-                                          child: Opacity(
-                                            opacity: isSelected ? 1 : 0,
-                                            child: Text(
-                                              '/',
-                                              style: Typos(context).large(color: h ? homeModel.backgroundColor : homeModel.foregroundColor),
-                                            ),
+                Builder(builder: (context) {
+                  List<Project> projects = homeModel.prjs;
+                  projects.sort((a, b) => a.priority.compareTo(b.priority));
+                  if (homeModel.filterSkills.isNotEmpty) {
+                    // projects.sort((a, b) {
+                    //   bool aIsPartOfFilter = homeModel.filteredProjects.any((p) => p.id == a.id);
+                    //   bool bIsPartOfFilter = homeModel.filteredProjects.any((p) => p.id == b.id);
+                    //   if (aIsPartOfFilter && !bIsPartOfFilter) return -1;
+                    //   if (!aIsPartOfFilter && bIsPartOfFilter) return 1;
+                    //   return 1;
+                    // });
+                    List<Project> filteredProjects = homeModel.filteredProjects;
+                    List<Project> unfilteredProjects = projects.where((p) => !filteredProjects.any((f) => f.id == p.id)).toList();
+                    projects = filteredProjects + unfilteredProjects;
+                  }
+                  return Expanded(
+                    child: ListView.builder(
+                      itemCount: projects.length,
+                      padding: const EdgeInsets.all(0),
+                      itemBuilder: (context, index) {
+                        Project project = projects[index];
+                        bool isSelected = homeModel.currentProject?.id == project.id;
+                        bool isPartOfFilter = homeModel.filterSkills.isEmpty ? true : homeModel.filteredProjects.any((p) => p.id == project.id);
+                        return Hover(
+                          showCursor: true,
+                          child: (h) => GestureDetector(
+                            onTap: () => homeModel.goToThisProject(project),
+                            child: Opacity(
+                              opacity: isPartOfFilter || h ? 1 : 0.3,
+                              child: Container(
+                                height: 75 - Constants.edgeWidth(context),
+                                padding: EdgeInsets.only(left: 25, right: h ? 25 : 0),
+                                decoration: BoxDecoration(
+                                  color: h ? homeModel.foregroundColor : Colors.transparent,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    if (homeModel.anyProjectIsSelected)
+                                      Padding(
+                                        padding: const EdgeInsets.only(right: 10),
+                                        child: Opacity(
+                                          opacity: isSelected ? 1 : 0,
+                                          child: Text(
+                                            '/',
+                                            style: Typos(context).large(color: h ? homeModel.backgroundColor : homeModel.foregroundColor),
                                           ),
                                         ),
-                                      Expanded(
-                                        child: Text(
-                                          project.title,
-                                          style: Typos(context).large(color: h ? homeModel.backgroundColor : homeModel.foregroundColor),
-                                        ),
                                       ),
-                                      Text(
-                                        '->',
-                                        style: Typos(context).regular(color: h ? homeModel.backgroundColor : Colors.transparent),
+                                    Expanded(
+                                      child: Text(
+                                        project.title,
+                                        style: Typos(context).large(color: h ? homeModel.backgroundColor : homeModel.foregroundColor),
                                       ),
-                                      if (isPartOfFilter && !h)
-                                        Container(
-                                          height: homeModel.menuButtonSize(context) - Constants.edgeWidth * 2,
-                                          padding: const EdgeInsets.only(left: 15, right: 15),
-                                          child: Center(
-                                            child: Text(
-                                              homeModel.filterSkills.isEmpty ? '' : '<${homeModel.filterSkills.join('•')}>',
-                                              style: Typos(context).large(color: homeModel.foregroundColor),
-                                              textAlign: TextAlign.center,
-                                            ),
+                                    ),
+                                    Text(
+                                      '->',
+                                      style: Typos(context).regular(color: h ? homeModel.backgroundColor : Colors.transparent),
+                                    ),
+                                    if (isPartOfFilter && !h)
+                                      Container(
+                                        height: homeModel.menuButtonSize(context) - Constants.edgeWidth(context) * 2,
+                                        padding: const EdgeInsets.only(left: 15, right: 15),
+                                        child: Center(
+                                          child: Text(
+                                            homeModel.filterSkills.isEmpty ? '' : '<${homeModel.filterSkills.join('•')}>',
+                                            style: Typos(context).large(color: homeModel.foregroundColor),
+                                            textAlign: TextAlign.center,
                                           ),
-                                        )
-                                    ],
-                                  ),
+                                        ),
+                                      )
+                                  ],
                                 ),
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    );
-                  }
-                ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                }),
               ],
             );
           },

@@ -513,6 +513,7 @@ class TagsViewModel extends BaseViewModel {
     tag.x = screenPos.x;
     tag.y = screenPos.y;
     final normalizedDepth = (zDepth + sphereRadius) / (2 * sphereRadius);
+    // print('normalizedDepth: $normalizedDepth');
     tag.size = normalizedDepth;
   }
 
@@ -523,7 +524,7 @@ class TagsViewModel extends BaseViewModel {
     Offset? localPosition = _globalToLocal(globalPosition);
     double distance = _calculateCursorDistanceFromCenter(localPosition);
     double normalizedDistance = _normalizeCursorDistance(distance);
-    rotationSpeed = normalizedDistance;
+    rotationSpeed = normalizedDistance * (_isCursorInBounds(localPosition) ? 6.0 : 3);
 
     Vector3? calculatedRotationAxis = _calculateRotationAxis(localPosition);
     if (calculatedRotationAxis != null) {
