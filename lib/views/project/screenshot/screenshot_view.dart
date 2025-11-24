@@ -60,7 +60,7 @@ class ScreenshotView extends StatelessWidget {
                       child: SizedBox(
                         width: width,
                         height: height,
-                        child: ProjectScreenshopImage(url: model.currentScreenshot.url, box: box),
+                        child: ProjectScreenshotImage(url: model.currentScreenshot.url, box: box),
                       ),
                     ),
                   );

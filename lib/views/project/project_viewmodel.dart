@@ -69,12 +69,12 @@ class ProjectViewModel extends BaseViewModel {
   // PUBLIC METHODS
   // ============================================================================
 
-  void openScreenshot(BuildContext context, int index, Box box) {
+  void openScreenshot(BuildContext context, int index, Box box, Project prj) {
     _anal.logEvent(
       name: 'project_screenshot_opened',
       parameters: {
-        'project_title': project.title,
-        'screenshot_url': project.screenshots[index].url,
+        'project_title': prj.title,
+        'screenshot_url': prj.screenshots[index].url,
       },
     );
     Navigator.push(
@@ -83,7 +83,7 @@ class ProjectViewModel extends BaseViewModel {
         pageBuilder: (context, animation, secondaryAnimation) => Scaffold(
           backgroundColor: Colors.transparent,
           body: ScreenshotView(
-            screenshots: project.screenshots,
+            screenshots: prj.screenshots,
             initialIndex: index,
             box: box,
           ),

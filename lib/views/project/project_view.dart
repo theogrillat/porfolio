@@ -211,7 +211,7 @@ class ProjectView extends StatelessWidget {
               child: (box) => ProjectScreenshot(
                 url: project.screenshots[0].url,
                 box: box,
-                onTap: model.openScreenshot,
+                onTap: (context, index, box) => model.openScreenshot(context, index, box, project),
                 index: 0,
               ),
             ),
@@ -228,7 +228,7 @@ class ProjectView extends StatelessWidget {
               child: (box) => ProjectScreenshot(
                 url: project.screenshots[1].url,
                 box: box,
-                onTap: model.openScreenshot,
+                onTap: (context, index, box) => model.openScreenshot(context, index, box, project),
                 index: 1,
               ),
             ),
@@ -245,7 +245,7 @@ class ProjectView extends StatelessWidget {
               child: (box) => ProjectScreenshot(
                 url: project.screenshots[2].url,
                 box: box,
-                onTap: model.openScreenshot,
+                onTap: (context, index, box) => model.openScreenshot(context, index, box, project),
                 index: 2,
               ),
             ),
@@ -262,7 +262,7 @@ class ProjectView extends StatelessWidget {
               child: (box) => ProjectScreenshot(
                 url: project.screenshots[3].url,
                 box: box,
-                onTap: model.openScreenshot,
+                onTap: (context, index, box) => model.openScreenshot(context, index, box, project),
                 index: 3,
               ),
             ),
@@ -329,14 +329,14 @@ class ProjectScreenshot extends StatelessWidget {
       onTap: () => onTap(context, index, box),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: ProjectScreenshopImage(url: url, box: box),
+        child: ProjectScreenshotImage(url: url, box: box),
       ),
     );
   }
 }
 
-class ProjectScreenshopImage extends StatelessWidget {
-  const ProjectScreenshopImage({
+class ProjectScreenshotImage extends StatelessWidget {
+  const ProjectScreenshotImage({
     super.key,
     required this.url,
     required this.box,

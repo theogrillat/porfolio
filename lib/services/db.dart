@@ -27,13 +27,18 @@ class DbService {
       CollectionReference ref = db.collection('projects');
       QuerySnapshot snapshot = await ref.where('isPublic', isEqualTo: true).get();
       inspect(snapshot.docs);
-      List<Project> projects = snapshot.docs.map((doc) {
-        String id = doc.id;
-        return Project.fromMap({
-          ...doc.data() as Map<String, dynamic>,
-          'id': id,
-        });
-      }).toList();
+      List<Project> projects = [];
+      for (var doc in snapshot.docs) {
+        try {
+          String id = doc.id;
+          projects.add(Project.fromMap({
+            ...doc.data() as Map<String, dynamic>,
+            'id': id,
+          }));
+        } catch (e) {
+          print('Error parsing project ${doc.id}: $e');
+        }
+      }
       return projects;
     } catch (e) {
       print(e);
