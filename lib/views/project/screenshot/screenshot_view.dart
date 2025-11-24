@@ -16,11 +16,13 @@ class ScreenshotView extends StatelessWidget {
     required this.screenshots,
     this.initialIndex = 0,
     required this.box,
+    this.isFullscreen = false,
   });
 
   final List<Screenshot> screenshots;
   final int initialIndex;
   final Box box;
+  final bool isFullscreen;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +62,11 @@ class ScreenshotView extends StatelessWidget {
                       child: SizedBox(
                         width: width,
                         height: height,
-                        child: ProjectScreenshotImage(url: model.currentScreenshot.url, box: box),
+                        child: ProjectScreenshotImage(
+                          url: model.currentScreenshot.url,
+                          box: box,
+                          isFullscreen: isFullscreen,
+                        ),
                       ),
                     ),
                   );

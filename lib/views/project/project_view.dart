@@ -340,16 +340,18 @@ class ProjectScreenshotImage extends StatelessWidget {
     super.key,
     required this.url,
     required this.box,
+    this.isFullscreen = false,
   });
 
   final String url;
   final Box box;
+  final bool isFullscreen;
 
   @override
   Widget build(BuildContext context) {
     if (url.isEmpty) return Container();
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: !isFullscreen ? BorderRadius.zero : BorderRadius.circular(12),
       child: Hero(
         tag: url,
         child: Image.network(

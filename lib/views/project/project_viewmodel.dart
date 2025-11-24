@@ -86,6 +86,7 @@ class ProjectViewModel extends BaseViewModel {
             screenshots: prj.screenshots,
             initialIndex: index,
             box: box,
+            isFullscreen: true,
           ),
         ),
         opaque: false,
