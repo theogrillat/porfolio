@@ -56,6 +56,7 @@ dependencies:
   morphable_shape: ^2.0.0
   firebase_analytics: ^11.6.0
   firebase_analytics_web: ^0.5.10+16
+  video_player: ^2.10.1
 
 dependency_overrides:
   firebase_core_platform_interface: 5.4.0

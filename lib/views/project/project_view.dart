@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:video_player/video_player.dart';
 import 'package:portfolio/models/project.dart';
 import 'package:portfolio/shared/coords.dart';
 import 'package:portfolio/shared/extensions.dart';
 import 'package:portfolio/shared/grid.dart';
 import 'package:portfolio/shared/styles.dart';
-import 'package:portfolio/shared/utils.dart';
 import 'package:portfolio/views/home/home_viewmodel.dart';
 import 'package:portfolio/views/project/project_viewmodel.dart';
 import 'package:portfolio/widgets/animated_skew.dart';
 import 'package:portfolio/widgets/box_action.dart';
 import 'package:portfolio/widgets/boxbutton.dart';
-import 'package:portfolio/widgets/display.dart';
 import 'package:portfolio/widgets/hover.dart';
 import 'package:portfolio/widgets/md_viewer.dart';
 import 'package:portfolio/widgets/pressure/pressure_view.dart';
@@ -335,7 +333,7 @@ class ProjectScreenshot extends StatelessWidget {
   }
 }
 
-class ProjectScreenshotImage extends StatelessWidget {
+class ProjectScreenshotImage extends StatefulWidget {
   const ProjectScreenshotImage({
     super.key,
     required this.url,
@@ -346,29 +344,118 @@ class ProjectScreenshotImage extends StatelessWidget {
   final Box box;
 
   @override
+  State<ProjectScreenshotImage> createState() => _ProjectScreenshotImageState();
+}
+
+class _ProjectScreenshotImageState extends State<ProjectScreenshotImage> {
+  VideoPlayerController? _controller;
+  bool _isVideo = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfVideo();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProjectScreenshotImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _disposeController();
+      _checkIfVideo();
+    }
+  }
+
+  void _checkIfVideo() {
+    try {
+      final uri = Uri.parse(widget.url);
+      final path = uri.path.toLowerCase();
+      final extension = path.split('.').last;
+      _isVideo = ['mp4', 'mov', 'webm'].contains(extension);
+    } catch (e) {
+      _isVideo = false;
+    }
+
+    if (_isVideo) {
+      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
+        ..initialize().then((_) {
+          if (mounted) {
+            setState(() {});
+            _controller!.setLooping(true);
+            _controller!.setVolume(0);
+            _controller!.play();
+          }
+        });
+    }
+  }
+
+  void _disposeController() {
+    _controller?.dispose();
+    _controller = null;
+  }
+
+  @override
+  void dispose() {
+    _disposeController();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (url.isEmpty) return Container();
+    if (widget.url.isEmpty) return Container();
+    return _buildContent();
+  }
+
+  Widget _buildContent() {
+    if (_isVideo && _controller != null && _controller!.value.isInitialized) {
+      return IgnorePointer(
+        child: RotatedBox(
+          quarterTurns: 0,
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: _controller!.value.size.width,
+              height: _controller!.value.size.height,
+              child: VideoPlayer(_controller!),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_isVideo) {
+      // Show loading or placeholder while video initializes
+      return Container(
+        decoration: BoxDecoration(
+          color: widget.box.background,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: widget.box.foreground,
+          ),
+        ),
+      );
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Hero(
-        tag: url,
-        child: Image.network(
-          key: ValueKey('img_0_$url'),
-          url,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: box.background,
-              child: Center(
-                child: Icon(
-                  Icons.broken_image,
-                  color: box.foreground,
-                  size: 50,
-                ),
+      child: Image.network(
+        key: ValueKey('img_0_${widget.url}'),
+        widget.url,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: widget.box.background,
+            child: Center(
+              child: Icon(
+                Icons.broken_image,
+                color: widget.box.foreground,
+                size: 50,
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }
